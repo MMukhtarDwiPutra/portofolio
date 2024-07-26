@@ -14,7 +14,8 @@ func AddRouter(muxRouter *mux.Router) *mux.Router{
 	db := helper.NewDB();
 
 	dataTmpRepository := repository.NewDataTmpSCMTRepository(db)
-	dataTmpService := service.NewDataTmpService(dataTmpRepository)
+	gudangRepository := repository.NewGudangRepository(db)
+	dataTmpService := service.NewDataTmpService(dataTmpRepository, gudangRepository)
 
 	dataTmpController := controller.NewDataTmpController(dataTmpService)
 
@@ -24,6 +25,7 @@ func AddRouter(muxRouter *mux.Router) *mux.Router{
 	muxRouter.HandleFunc("/api/count_premium/{merk}", dataTmpController.CountPremiumPerWitel).Methods("GET")
 	muxRouter.HandleFunc("/api/count_stb/{merk}", dataTmpController.CountSTBPerWitel).Methods("GET")
 	muxRouter.HandleFunc("/api/count_ap/{merk}", dataTmpController.CountAPPerWitel).Methods("GET")
+	muxRouter.HandleFunc("/api/testing", dataTmpController.Testing).Methods("GET")
 
 	muxRouter.Use(exception.ErrorHandler)
 

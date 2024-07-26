@@ -17,6 +17,7 @@ type DataTmpRepository interface{
 	CountPremiumPerWitel(merk string) []domain.CountResponse
 	CountSTBPerWitel(merk string) []domain.CountResponse
 	CountAPPerWitel(merk string) []domain.CountResponse
+	GetWitelsFromDataByMerk(merk string) []string
 }
 
 type dataTmpRepository struct{
@@ -174,3 +175,20 @@ func (r *dataTmpRepository) CountAPPerWitel(merk string) []domain.CountResponse{
 
 	return countAPs
 }
+
+func (r *dataTmpRepository) GetWitelsFromDataByMerk(merk string) []string{
+	var witels [] string
+
+	rows, err := r.db.Query("SELECT DISTINCT witel FROM data WHERE merk = ?", merk)
+	helper.PanicIfError(err)
+
+	for rows.Next(){
+		var witel string
+		rows.Scan(&witel)
+
+		witels = append(witels, witel)
+	}
+
+	return witels
+}
+

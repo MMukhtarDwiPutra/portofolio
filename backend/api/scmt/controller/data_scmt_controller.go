@@ -50,7 +50,6 @@ func (c *dataTmpController) InsertDataTmp(w http.ResponseWriter, r *http.Request
 		Data : dataTmpResponse,
 	}
 
-	fmt.Println(webResponse)
 	helper.WriteToResponseBody(w, webResponse)
 }
 
@@ -65,7 +64,6 @@ func (c *dataTmpController) CountRetailPerWitel(w http.ResponseWriter, r *http.R
 		Status : "OK",
 		Data : countResponse,
 	}
-	fmt.Println(webResponse)
 
 	helper.WriteToResponseBody(w, webResponse)
 }
@@ -81,7 +79,6 @@ func (c *dataTmpController) CountPremiumPerWitel(w http.ResponseWriter, r *http.
 		Status : "OK",
 		Data : countResponse,
 	}
-	fmt.Println(webResponse)
 
 	helper.WriteToResponseBody(w, webResponse)
 }
@@ -116,6 +113,10 @@ func (c *dataTmpController) CountAPPerWitel(w http.ResponseWriter, r *http.Reque
 	helper.WriteToResponseBody(w, webResponse)
 }
 
+
+func (c *dataTmpController) Testing(w http.ResponseWriter, r *http.Request){
+	c.dataTmpService.CountDataPerWitel();
+}
 
 // testing insert
 // {
