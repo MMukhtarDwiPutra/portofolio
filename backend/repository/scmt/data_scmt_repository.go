@@ -87,13 +87,13 @@ func (r *dataTmpRepository) CountRetailPerWitel(merk string) []domain.CountRespo
 	var rows *sql.Rows
 	var err error
 
-	if(merk == "zte"){
+	if(merk == "ZTE"){
 		rows, err = r.db.Query("SELECT lokasi_wh, sum(jumlah) as stock FROM data_tmp WHERE (deskripsi LIKE '%ONT_ZTE_F670L%') AND (deskripsi like '%ZTE%') AND (status LIKE '%AVAILABLE%' OR status LIKE '%INTECHNICIAN%') GROUP BY lokasi_wh")
-	}else if(merk == "nokia"){
+	}else if(merk == "Nokia"){
 		rows, err = r.db.Query("SELECT lokasi_wh, sum(jumlah) as stock FROM `data_tmp` WHERE (deskripsi like '%G240WL%' OR deskripsi like '%2425G%') AND (status LIKE '%AVAILABLE%' OR status LIKE '%INTECHNICIAN%') GROUP BY lokasi_wh")
-	}else if(merk == "fiberhome"){
+	}else if(merk == "Fiberhome"){
 		rows, err = r.db.Query("SELECT lokasi_wh, sum(jumlah) as stock FROM `data_tmp` WHERE (deskripsi LIKE '%HG6145D2%' or deskripsi LIKE '%HG6145F%') AND (deskripsi like '%Fiberhome%') AND (status LIKE '%AVAILABLE%' OR status LIKE '%INTECHNICIAN%') GROUP BY lokasi_wh")
-	}else if(merk == "huawei"){
+	}else if(merk == "Huawei"){
 		rows, err = r.db.Query("SELECT lokasi_wh, sum(jumlah) as stock FROM `data_tmp` WHERE (deskripsi LIKE '%HG8145%') AND (deskripsi like '%Huawei%') AND (status LIKE '%AVAILABLE%' OR status LIKE '%INTECHNICIAN%') GROUP BY lokasi_wh")		
 	}
 
@@ -114,11 +114,11 @@ func (r *dataTmpRepository) CountPremiumPerWitel(merk string) []domain.CountResp
 	var rows *sql.Rows
 	var err error
 
-	if(merk == "zte"){
+	if(merk == "ZTE"){
 		rows, err = r.db.Query("SELECT lokasi_wh, sum(jumlah) as stock FROM `data_tmp` WHERE (deskripsi LIKE '%ZTE_F670 V2.0%' or deskripsi = 'ONT_ZTE_F670 V2.0' or deskripsi = 'ONT_ZTE_F670') AND (deskripsi like '%ZTE%') AND (status LIKE '%AVAILABLE%' OR status LIKE '%INTECHNICIAN%') GROUP BY lokasi_wh");
-	}else if(merk == "fiberhome"){
+	}else if(merk == "Fiberhome"){
 		rows, err = r.db.Query("SELECT lokasi_wh, sum(jumlah) as stock FROM `data_tmp` WHERE (deskripsi LIKE '%HG6245N%') AND (deskripsi like '%Fiberhome%') AND (status LIKE '%AVAILABLE%' OR status LIKE '%INTECHNICIAN%') GROUP BY lokasi_wh");
-	}else if(merk == "huawei"){
+	}else if(merk == "Huawei"){
 		rows, err = r.db.Query("SELECT lokasi_wh, sum(jumlah) as stock FROM `data_tmp` WHERE (deskripsi = 'ONT_HUAWEI HG8245W5-6T') AND (deskripsi like '%Huawei%') AND (status LIKE '%AVAILABLE%' OR status LIKE '%INTECHNICIAN%') GROUP BY lokasi_wh");
 	}
 
@@ -179,7 +179,8 @@ func (r *dataTmpRepository) CountAPPerWitel(merk string) []domain.CountResponse{
 func (r *dataTmpRepository) GetWitelsFromDataByMerk(merk string) []string{
 	var witels [] string
 
-	rows, err := r.db.Query("SELECT DISTINCT witel FROM data WHERE merk = ?", merk)
+	likePattern := "%" + merk + "%"
+	rows, err := r.db.Query("SELECT DISTINCT lokasi_wh FROM data_tmp WHERE deskripsi like ?", likePattern)
 	helper.PanicIfError(err)
 
 	for rows.Next(){

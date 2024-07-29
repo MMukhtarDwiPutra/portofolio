@@ -15,9 +15,14 @@ func AddRouter(muxRouter *mux.Router) *mux.Router{
 
 	dataTmpRepository := repository.NewDataTmpSCMTRepository(db)
 	gudangRepository := repository.NewGudangRepository(db)
-	dataTmpService := service.NewDataTmpService(dataTmpRepository, gudangRepository)
+	penerimaRepository := repository.NewPenerimaRepository(db)
+	fiturRepository := repository.NewFiturRepository(db)
+	
+	dataTmpService := service.NewDataTmpService(dataTmpRepository, gudangRepository, penerimaRepository)
+	penerimaService := service.NewPenerimaService(penerimaRepository, gudangRepository, fiturRepository)
 
 	dataTmpController := controller.NewDataTmpController(dataTmpService)
+	penerimaController := controller.NewPenerimaController(penerimaService)
 
 	muxRouter.HandleFunc("/api/get_all_data_tmp", dataTmpController.GetAllDataTmp).Methods("GET")
 	muxRouter.HandleFunc("/api/insert_data_tmp", dataTmpController.InsertDataTmp).Methods("POST")
@@ -26,6 +31,8 @@ func AddRouter(muxRouter *mux.Router) *mux.Router{
 	muxRouter.HandleFunc("/api/count_stb/{merk}", dataTmpController.CountSTBPerWitel).Methods("GET")
 	muxRouter.HandleFunc("/api/count_ap/{merk}", dataTmpController.CountAPPerWitel).Methods("GET")
 	muxRouter.HandleFunc("/api/testing", dataTmpController.Testing).Methods("GET")
+
+	muxRouter.HandleFunc("/api/get_pengiriman_ont", penerimaController.GetPengirimanONT).Methods("GET")
 
 	muxRouter.Use(exception.ErrorHandler)
 

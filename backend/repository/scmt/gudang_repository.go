@@ -9,6 +9,10 @@ import (
 type GudangRepository interface{
 	GetTREGQtyMinimum() []domain.TREGMinimumResponse
 	GetQtyMinimum() []domain.TREGMinimumResponse
+	GetAllSOFromTREG(witel string) []string
+	GetAllSOFromWitel(witel string) []string
+	GetSOFromSO(witel string) []string
+	GetAllWarehouse() []domain.LokasiWarehouseResponse
 }
 
 type gudangRepository struct{
@@ -48,4 +52,68 @@ func (r *gudangRepository) GetQtyMinimum() []domain.TREGMinimumResponse{
 	}
 
 	return QtyMinimumResponses
+}
+
+func (r *gudangRepository) GetAllSOFromTREG(witel string) []string{
+	var witels []string
+
+	rows, err := r.db.Query("SELECT DISTINCT `lokasi_wh` FROM gudang WHERE `regional` = ?", witel)
+	helper.PanicIfError(err)
+
+	for rows.Next(){
+		var witel string
+		rows.Scan(&witel)
+
+		witels = append(witels, witel)
+	}
+
+	return witels
+}
+
+func (r *gudangRepository) GetAllSOFromWitel(witel string) []string{
+	var witels []string
+
+	rows, err := r.db.Query("SELECT DISTINCT `lokasi_wh` FROM gudang WHERE `witel` = ?", witel)
+	helper.PanicIfError(err)
+
+	for rows.Next(){
+		var witel string
+		rows.Scan(&witel)
+
+		witels = append(witels, witel)
+	}
+
+	return witels
+}
+
+func (r *gudangRepository) GetSOFromSO(witel string) []string{
+	var witels []string
+
+	rows, err := r.db.Query("SELECT DISTINCT `lokasi_wh` FROM gudang WHERE `lokasi_wh` = ?", witel)
+	helper.PanicIfError(err)
+
+	for rows.Next(){
+		var witel string
+		rows.Scan(&witel)
+
+		witels = append(witels, witel)
+	}
+
+	return witels
+}
+
+func (r *gudangRepository) GetAllWarehouse() []domain.LokasiWarehouseResponse{
+	var warehouses []domain.LokasiWarehouseResponse
+
+	rows, err := r.db.Query("SELECT lokasi_wh, lokasi FROM gudang")
+	helper.PanicIfError(err)
+
+	for rows.Next(){
+		var warehouse domain.LokasiWarehouseResponse
+		rows.Scan(&warehouse.LokasiWH, &warehouse.Lokasi)
+
+		warehouses = append(warehouses, warehouse)
+	}
+
+	return warehouses
 }

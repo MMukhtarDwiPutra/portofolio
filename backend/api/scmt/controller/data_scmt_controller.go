@@ -7,7 +7,7 @@ import(
 	"portofolio.com/domain"
 	"portofolio.com/domain/scmt"
 	"github.com/gorilla/mux"
-	// "fmt"
+	"fmt"
 	// "encoding/json"
 	// "strconv"
 )
@@ -115,7 +115,16 @@ func (c *dataTmpController) CountAPPerWitel(w http.ResponseWriter, r *http.Reque
 
 
 func (c *dataTmpController) Testing(w http.ResponseWriter, r *http.Request){
-	c.dataTmpService.CountDataPerWitel();
+	countResponse := c.dataTmpService.RekapDelivery();
+	fmt.Println("tes bawah")
+
+	webResponse := web.WebResponse{
+		Code : 200,
+		Status : "OK",
+		Data : countResponse,
+	}
+
+	helper.WriteToResponseBody(w, webResponse)
 }
 
 // testing insert
