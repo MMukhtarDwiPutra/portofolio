@@ -34,7 +34,7 @@ export default function Navbar(){
 			        </div>
 
 			        <div className="col-md-2" style={{paddingTop: "30px", paddingBottom: "5px"}}>
-			            <div className="icon" onClick="toggleNotifi()">
+			            <div className="icon" >
 			                <div className="d-flex justify-content-end">
 			                    <a className="active btn btn-danger align-middle my-auto">
 			              			<img src={Bell} alt=""  style={{color: "white", height: "40px"}} /><span id="notifesHeader"></span>

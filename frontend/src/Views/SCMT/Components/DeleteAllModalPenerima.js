@@ -4,7 +4,7 @@ import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import "../../../Assets/css/PopUp_Edit_Penerimaan.css"
 
-const DeleteAllModal = ({ showModal, handleCloseModal, handleSaveChanges }) => {
+const DeleteAllModal = ({ showModal, handleCloseModal, handleClick }) => {
   return (
     <>
     <Modal show={showModal} onHide={handleCloseModal} size="lg">
@@ -18,7 +18,7 @@ const DeleteAllModal = ({ showModal, handleCloseModal, handleSaveChanges }) => {
         <Button variant="secondary" onClick={handleCloseModal}>
           Cancel
         </Button>
-        <Button variant="danger">
+        <Button variant="danger" onClick={handleClick}>
           Hapus
         </Button>
       </Modal.Footer>

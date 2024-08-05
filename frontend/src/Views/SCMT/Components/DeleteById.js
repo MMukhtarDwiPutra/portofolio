@@ -12,7 +12,7 @@ const DeleteByIdModal = ({ showModal, handleCloseModal, handleClick, data }) => 
 		        <Modal.Title>Delete One Data</Modal.Title>
 		      </Modal.Header>
 		      <Modal.Body>
-		      	<div class="" style={{fontSize: "14px"}}>Apakah anda yakin ingin menghapus data Pengiriman?<br/>
+		      	<div className="" style={{fontSize: "14px"}}>Apakah anda yakin ingin menghapus data Pengiriman?<br/>
 		      	Type : {data.type}<br/>
 		      	Qty : {data.qty}<br/>
 		      	PIC Pengirim : {data.pic_pengirim}<br/>

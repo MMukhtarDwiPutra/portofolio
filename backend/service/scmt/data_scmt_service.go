@@ -20,7 +20,8 @@ type DataTmpService interface{
 	CountDataPerWitelTmp() map[string]interface{}
 	AddStockCountTmp(jenisStock string, data map[string]interface{}, merk string) map[string]interface{}
 	HitungQtyKirim(data map[string]interface{}) map[string]interface{}
-	RekapDelivery() map[string]interface{}
+	RekapDeliveryTREG() map[string]interface{}
+	RekapDeliveryWitel(lokasiWH string) map[string]interface{}
 }
 
 type dataTmpService struct{
@@ -97,6 +98,8 @@ func (s *dataTmpService) CountDataPerWitelTmp() map[string]interface{}{
 	data["penerima_"+strings.ToLower(merk)] = s.penerimaRepository.CountRetailPerWitel(merk);
 	data = s.AddStockCountTmp(jenisStock, data, merk);
 
+	data = AddTotalStockCount(jenisStock, data)
+
 	jenisStock = "Premium"
 	merk = "Fiberhome"
 
@@ -116,6 +119,8 @@ func (s *dataTmpService) CountDataPerWitelTmp() map[string]interface{}{
 	data["penerima_"+strings.ToLower(merk)] = s.penerimaRepository.CountPremiumPerWitel(merk);
 	data = s.AddStockCountTmp(jenisStock, data, merk);
 
+	data = AddTotalStockCount(jenisStock, data)
+	data = AddStockTregCountTmp(data)
 	// if witelSlice, ok := data["witel"].([]domain.TREGMinimumResponse); ok {
 	// 	return witelSlice
 	// }
@@ -124,10 +129,136 @@ func (s *dataTmpService) CountDataPerWitelTmp() map[string]interface{}{
 	return data
 }
 
+func AddTotalStockCount(jenisStock string, data map[string]interface{}) map[string]interface{}{
+	if witelSlice, ok := data["witel"].([]domain.TREGMinimumResponse); ok {
+		if(jenisStock == "Retail"){		
+			for i := range witelSlice {
+				witelSlice[i].TotalRetailStock = witelSlice[i].RetailStockHuawei + witelSlice[i].RetailStockFiberhome + witelSlice[i].RetailStockNokia + witelSlice[i].RetailStockZTE
+				witelSlice[i].TotalRetail = witelSlice[i].RetailHW + witelSlice[i].RetailFH + witelSlice[i].RetailALU + witelSlice[i].RetailZTE
+				witelSlice[i].OnDeliveryTotalRetail = witelSlice[i].OnDeliveryRetailHuawei + witelSlice[i].OnDeliveryRetailFiberhome + witelSlice[i].OnDeliveryRetailNokia + witelSlice[i].OnDeliveryRetailZTE
+			}
+		}else if(jenisStock == "Premium"){
+			for i := range witelSlice {
+				witelSlice[i].TotalPremiumStock = witelSlice[i].PremiumStockHuawei + witelSlice[i].PremiumStockFiberhome + + witelSlice[i].PremiumStockZTE
+				witelSlice[i].TotalPremium = witelSlice[i].PremiumHW + witelSlice[i].PremiumFH + witelSlice[i].PremiumZTE
+				witelSlice[i].OnDeliveryTotalPremium = witelSlice[i].OnDeliveryPremiumHuawei + witelSlice[i].OnDeliveryPremiumFiberhome + witelSlice[i].OnDeliveryPremiumZTE
+			}
+		}
+		data["witel"] = witelSlice
+	}
+
+	return data
+}
+
+// Generic sum function for summing a field in a slice of structs
+func SumWitelArrayByField[T any](items []T, selector func(T) int) int {
+    total := 0
+    for _, item := range items {
+        total += selector(item)
+    }
+    return total
+}
+
+func AddStockTregCountTmp(data map[string]interface{}) map[string]interface{}{
+	if witelSlice, ok := data["witel"].([]domain.TREGMinimumResponse); ok{
+		tregArray := filterDataTREGBySO(witelSlice, "WH TR TREG")
+
+		for i:= 0; i < len(tregArray); i++{
+			regional := tregArray[i].Regional
+
+			whArray := filterDataWitelByTREG(witelSlice, regional)
+
+			var idx int
+			for j, dataWitel := range witelSlice{
+				if(strings.Contains(dataWitel.LokasiWH, regional)){
+					idx = j;
+					break
+				}
+			}
+
+			witelSlice[idx].RetailStockZTE = SumWitelArrayByField(whArray, func(i domain.TREGMinimumResponse) int { return i.RetailStockZTE })
+			witelSlice[idx].RetailStockFiberhome = SumWitelArrayByField(whArray, func(i domain.TREGMinimumResponse) int { return i.RetailStockFiberhome })
+			witelSlice[idx].RetailStockHuawei = SumWitelArrayByField(whArray, func(i domain.TREGMinimumResponse) int { return i.RetailStockHuawei })
+			witelSlice[idx].RetailStockNokia = SumWitelArrayByField(whArray, func(i domain.TREGMinimumResponse) int { return i.RetailStockNokia })
+
+			witelSlice[idx].RetailZTE = SumWitelArrayByField(whArray, func(i domain.TREGMinimumResponse) int { return i.RetailZTE })
+			witelSlice[idx].RetailFH = SumWitelArrayByField(whArray, func(i domain.TREGMinimumResponse) int { return i.RetailFH })
+			witelSlice[idx].RetailHW = SumWitelArrayByField(whArray, func(i domain.TREGMinimumResponse) int { return i.RetailHW })
+			witelSlice[idx].RetailALU = SumWitelArrayByField(whArray, func(i domain.TREGMinimumResponse) int { return i.RetailALU })
+
+			witelSlice[idx].OnDeliveryRetailZTE = SumWitelArrayByField(whArray, func(i domain.TREGMinimumResponse) int { return i.OnDeliveryRetailZTE })
+			witelSlice[idx].OnDeliveryRetailFiberhome = SumWitelArrayByField(whArray, func(i domain.TREGMinimumResponse) int { return i.OnDeliveryRetailFiberhome })
+			witelSlice[idx].OnDeliveryRetailHuawei = SumWitelArrayByField(whArray, func(i domain.TREGMinimumResponse) int { return i.OnDeliveryRetailHuawei })
+			witelSlice[idx].OnDeliveryRetailNokia = SumWitelArrayByField(whArray, func(i domain.TREGMinimumResponse) int { return i.OnDeliveryRetailNokia })
+
+			witelSlice[idx].TotalRetailStock = witelSlice[idx].RetailStockHuawei + witelSlice[idx].RetailStockFiberhome + witelSlice[idx].RetailStockNokia + witelSlice[idx].RetailStockZTE
+			witelSlice[idx].TotalRetail = witelSlice[idx].RetailHW + witelSlice[idx].RetailFH + witelSlice[idx].RetailALU + witelSlice[idx].RetailZTE
+			witelSlice[idx].OnDeliveryTotalRetail = witelSlice[idx].OnDeliveryRetailHuawei + witelSlice[idx].OnDeliveryRetailFiberhome + witelSlice[idx].OnDeliveryRetailNokia + witelSlice[idx].OnDeliveryRetailZTE
+
+			witelSlice[idx].PremiumZTE = SumWitelArrayByField(whArray, func(i domain.TREGMinimumResponse) int { return i.PremiumZTE })
+			witelSlice[idx].PremiumFH = SumWitelArrayByField(whArray, func(i domain.TREGMinimumResponse) int { return i.PremiumFH })
+			witelSlice[idx].PremiumHW = SumWitelArrayByField(whArray, func(i domain.TREGMinimumResponse) int { return i.PremiumHW })
+
+			witelSlice[idx].PremiumStockZTE = SumWitelArrayByField(whArray, func(i domain.TREGMinimumResponse) int { return i.PremiumStockZTE })
+			witelSlice[idx].PremiumStockFiberhome = SumWitelArrayByField(whArray, func(i domain.TREGMinimumResponse) int { return i.PremiumStockFiberhome })
+			witelSlice[idx].PremiumStockHuawei = SumWitelArrayByField(whArray, func(i domain.TREGMinimumResponse) int { return i.PremiumStockHuawei })
+
+			witelSlice[idx].OnDeliveryPremiumZTE = SumWitelArrayByField(whArray, func(i domain.TREGMinimumResponse) int { return i.OnDeliveryPremiumZTE })
+			witelSlice[idx].OnDeliveryPremiumFiberhome = SumWitelArrayByField(whArray, func(i domain.TREGMinimumResponse) int { return i.OnDeliveryPremiumFiberhome })
+			witelSlice[idx].OnDeliveryPremiumHuawei = SumWitelArrayByField(whArray, func(i domain.TREGMinimumResponse) int { return i.OnDeliveryPremiumHuawei })
+			
+			witelSlice[idx].TotalPremiumStock = witelSlice[idx].PremiumStockHuawei + witelSlice[idx].PremiumStockFiberhome + witelSlice[idx].PremiumStockZTE
+			witelSlice[idx].TotalPremium = witelSlice[idx].PremiumHW + witelSlice[idx].PremiumFH + witelSlice[idx].PremiumZTE
+			witelSlice[idx].OnDeliveryTotalPremium = witelSlice[idx].OnDeliveryPremiumHuawei + witelSlice[idx].OnDeliveryPremiumFiberhome + witelSlice[idx].OnDeliveryPremiumZTE
+		}
+	}
+	return data
+}
+
+func filterDataTREGBySO(arrayDataWitel []domain.TREGMinimumResponse, namaWitel string) []domain.TREGMinimumResponse {
+    var dataTREGArray []domain.TREGMinimumResponse
+    for _, dataWitel := range arrayDataWitel {
+        if strings.Contains(dataWitel.LokasiWH, namaWitel){
+            dataTREGArray = append(dataTREGArray, dataWitel)
+        }
+    }
+    return dataTREGArray
+}
+
 func filterArrayStockByWitel(arrayStocks []domain.CountResponse, namaWitel string) domain.CountResponse {
     var stockObj domain.CountResponse
     for _, stock := range arrayStocks {
         if strings.Contains(stock.LokasiWH, namaWitel){
+            return stock
+        }
+    }
+    return stockObj
+}
+
+func filterArrayStockTASOByWitel(arrayStocks []domain.CountResponse, namaWitel string) domain.CountResponse{
+	var stockObj domain.CountResponse
+    for _, stock := range arrayStocks {
+        if strings.Contains(stock.LokasiWH, namaWitel) && strings.Contains(stock.LokasiWH, "SO"){
+            return stock
+        }
+    }
+    return stockObj
+}
+
+func filterArrayStockTASOByLokasiWH(arrayStocks []domain.CountResponse, namaWitel string) domain.CountResponse{
+	var stockObj domain.CountResponse
+    for _, stock := range arrayStocks {
+        if stock.LokasiWH == namaWitel{
+            return stock
+        }
+    }
+    return stockObj
+}
+
+func filterArrayStockWitelByWitel(arrayStocks []domain.CountResponse, namaWitel string) domain.CountResponse {
+    var stockObj domain.CountResponse
+    for _, stock := range arrayStocks {
+        if strings.Contains(stock.LokasiWH, namaWitel) && strings.Contains(stock.LokasiWH, "WITEL"){
             return stock
         }
     }
@@ -154,10 +285,40 @@ func filterDataWitelByWitel(arrayDataWitel []domain.TREGMinimumResponse, namaWit
     return dataWitelObj
 }
 
+func filterDataWitelByWitelWithoutWitelSO(arrayDataWitel []domain.TREGMinimumResponse, namaWitel string) []domain.TREGMinimumResponse {
+    var dataWitelObj []domain.TREGMinimumResponse
+    for _, dataWitel := range arrayDataWitel {
+        if strings.Contains(dataWitel.Witel, namaWitel) && !strings.Contains(dataWitel.LokasiWH, namaWitel){
+            dataWitelObj = append(dataWitelObj, dataWitel)
+        }
+    }
+    return dataWitelObj
+}
+
+func filterDataTREGMinimumResponseByTREG(arrayDataWitel []domain.TREGMinimumResponse) []domain.TREGMinimumResponse {
+    var dataTREGObj []domain.TREGMinimumResponse
+    for _, dataWitel := range arrayDataWitel {
+        if strings.Contains(dataWitel.LokasiWH, "WH TR TREG"){
+            dataTREGObj = append(dataTREGObj, dataWitel)
+        }
+    }
+    return dataTREGObj
+}
+
 func filterDataWitelByTREG(arrayDataWitel []domain.TREGMinimumResponse, namaWitel string) []domain.TREGMinimumResponse {
     var dataWitelObj []domain.TREGMinimumResponse
     for _, dataWitel := range arrayDataWitel {
-        if strings.Contains(dataWitel.Regional, namaWitel){
+        if strings.Contains(dataWitel.Regional, namaWitel) && !strings.Contains(dataWitel.LokasiWH, "TREG"){
+            dataWitelObj = append(dataWitelObj, dataWitel)
+        }
+    }
+    return dataWitelObj
+}
+
+func filterDataWitelByWitelTREG(arrayDataWitel []domain.TREGMinimumResponse, namaWitel string) []domain.TREGMinimumResponse {
+    var dataWitelObj []domain.TREGMinimumResponse
+    for _, dataWitel := range arrayDataWitel {
+        if strings.Contains(dataWitel.Regional, namaWitel) && strings.Contains(dataWitel.LokasiWH, "WITEL"){
             dataWitelObj = append(dataWitelObj, dataWitel)
         }
     }
@@ -186,8 +347,8 @@ func (s *dataTmpService) AddStockCountTmp(jenisStock string, data map[string]int
 		        	objWitel := &witelSlice[i]
 					namaWitel := objWitel.LokasiWH
 
-					filteredArray := filterArrayStockByWitel(stockSlice, namaWitel)
-					filteredArrayPenerima := filterArrayStockByWitel(penerimaSlice, namaWitel)
+					filteredArray := filterArrayStockTASOByWitel(stockSlice, namaWitel)
+					filteredArrayPenerima := filterArrayStockTASOByWitel(penerimaSlice, namaWitel)
 
 					if strings.Contains(namaWitel, "TA SO CCAN"){
 						startPos := strings.Index(namaWitel, "CCAN")
@@ -197,40 +358,35 @@ func (s *dataTmpService) AddStockCountTmp(jenisStock string, data map[string]int
 						countWord := len(strings.Split(namaWitel, " "))
 
 						if(countWord > 2){
-							filteredArray = filterArrayStockByWitel(stockSlice, namaWitel)
-							filteredArrayPenerima = filterArrayStockByWitel(penerimaSlice, namaWitel)
+							filteredArray = filterArrayStockTASOByWitel(stockSlice, namaWitel)
+							filteredArrayPenerima = filterArrayStockTASOByWitel(penerimaSlice, namaWitel)
 						}else{
 							namaWitel = witelSlice[i].LokasiWH
-							filteredArray = filterArrayStockByWitel(stockSlice, namaWitel)
-							filteredArrayPenerima = filterArrayStockByWitel(penerimaSlice, namaWitel)
+							filteredArray = filterArrayStockTASOByLokasiWH(stockSlice, namaWitel)
+							filteredArrayPenerima = filterArrayStockTASOByLokasiWH(penerimaSlice, namaWitel)
+							
 						}
 					}else if strings.Contains(namaWitel, "TA SO"){
 						startPos := strings.Index(namaWitel, "TA SO")
 					    startPos += 5
 						namaWitel = namaWitel[startPos:]
 
-						filteredArray = filterArrayStockByWitel(stockSlice, namaWitel)
-						filteredArrayPenerima = filterArrayStockByWitel(penerimaSlice, namaWitel)
+						filteredArray = filterArrayStockTASOByWitel(stockSlice, namaWitel)
+						filteredArrayPenerima = filterArrayStockTASOByWitel(penerimaSlice, namaWitel)
 					}else if strings.Contains(namaWitel, "WITEL CCAN"){
 						startPos := strings.Index(namaWitel, "TA SO")
 					    startPos += 11
 						namaWitel = namaWitel[startPos:]
 
-						// filteredArray = filterDataWitelByWitel(witelSlice, namaWitel)
-						// filteredArray = filterDataWitelByWitel(filteredArray, "WITEL")
-
-						// filteredArrayPenerima = filterArrayPenerimaByWitel(penerimaSlice, namaWitel)
-						// filteredArrayPenerima = filterArrayStockByWitel(penerimaSlice, "WITEL")
+						filteredArray = filterArrayStockWitelByWitel(stockSlice, namaWitel)
+						filteredArrayPenerima = filterArrayStockWitelByWitel(penerimaSlice, namaWitel)
 					}else if strings.Contains(namaWitel, "WITEL"){
 						startPos := strings.Index(namaWitel, "WITEL")
 					    startPos += 6
 						namaWitel = namaWitel[startPos:]
 
-						// filteredArray = filterDataWitelByWitel(witelSlice, namaWitel)
-						// filteredArray = filterDataWitelByWitel(filteredArray, "WITEL")
-
-						// filteredArrayPenerima = filterArrayPenerimaByWitel(penerimaSlice, namaWitel)
-						// filteredArrayPenerima = filterArrayPenerimaByWitel(penerimaSlice, "WITEL")
+						filteredArray = filterArrayStockWitelByWitel(stockSlice, namaWitel)
+						filteredArrayPenerima = filterArrayStockWitelByWitel(penerimaSlice, namaWitel)
 					}
 
 		    		if(filteredArray.LokasiWH != ""){
@@ -244,7 +400,7 @@ func (s *dataTmpService) AddStockCountTmp(jenisStock string, data map[string]int
 
 					if (filteredArrayPenerima.LokasiWH != ""){
 						fieldName := "OnDelivery"+ jenisStock + merk
-						stock := filteredArray.Stock
+						stock := filteredArrayPenerima.Stock
 						err := setField(objWitel, fieldName, stock)
 
 						helper.PanicIfError(err)
@@ -263,7 +419,205 @@ func (s *dataTmpService) AddStockCountTmp(jenisStock string, data map[string]int
     return data
 }
 
-func (s *dataTmpService) RekapDelivery() map[string]interface{}{
+func (s *dataTmpService) RekapDeliveryWitel(lokasiWH string) map[string]interface{}{
+	data := s.CountDataPerWitelTmp()
+	var result int
+	// var sumAllZTE, sumAllFH, sumAllHW, sumAllALU, sumAllPZTE, sumAllPFH, sumAllPHW int
+	// var sumZTE, sumFH, sumHW, sumALU, sumPZTE, sumPFH, sumPHW int
+	if tregSlice, ok := data["witel"].([]domain.TREGMinimumResponse); ok{
+		if(strings.Contains(lokasiWH, "TREG")){
+			data["response"] = filterDataWitelByWitelTREG(tregSlice, lokasiWH)
+
+			if witelSlice, ok := data["response"].([]domain.TREGMinimumResponse); ok{
+				for i := range witelSlice{
+					lokasiWH := witelSlice[i].LokasiWH
+
+					dataSO := filterDataWitelByWitelWithoutWitelSO(tregSlice, lokasiWH)
+
+					if(witelSlice[i].RetailStockZTE < witelSlice[i].BatasBawahRetailZTE){
+						result = witelSlice[i].BatasAtasRetailZTE - witelSlice[i].RetailStockZTE
+						witelSlice[i].QtyKirimRetailZTE += roundToNearest(result, 10)
+					}
+
+					if(witelSlice[i].RetailStockHuawei < witelSlice[i].BatasBawahRetailHW){
+						result = witelSlice[i].BatasAtasRetailHW - witelSlice[i].RetailStockHuawei
+						witelSlice[i].QtyKirimRetailHW += roundToNearest(result, 10)
+					}
+
+					if(witelSlice[i].RetailStockFiberhome < witelSlice[i].BatasBawahRetailFH){
+						result = witelSlice[i].BatasAtasRetailFH - witelSlice[i].RetailStockFiberhome
+						witelSlice[i].QtyKirimRetailFH += roundToNearest(result, 10)
+					}
+
+					if(witelSlice[i].RetailStockNokia < witelSlice[i].BatasBawahRetailALU){
+						result = witelSlice[i].BatasAtasRetailALU - witelSlice[i].RetailStockNokia
+						witelSlice[i].QtyKirimRetailALU += roundToNearest(result, 10)
+					}
+
+					if(witelSlice[i].PremiumStockZTE < witelSlice[i].BatasBawahPremiumZTE){
+						result = witelSlice[i].BatasAtasPremiumZTE - witelSlice[i].PremiumStockZTE
+						witelSlice[i].QtyKirimPremiumZTE += roundToNearest(result, 10)
+					}
+
+					if(witelSlice[i].PremiumStockHuawei < witelSlice[i].BatasBawahPremiumHW){
+						result = witelSlice[i].BatasAtasPremiumHW - witelSlice[i].PremiumStockHuawei
+						witelSlice[i].QtyKirimPremiumHW += roundToNearest(result, 12)
+					}
+
+					if(witelSlice[i].PremiumStockFiberhome < witelSlice[i].BatasBawahPremiumFH){
+						result = witelSlice[i].BatasAtasPremiumFH - witelSlice[i].PremiumStockFiberhome
+						witelSlice[i].QtyKirimPremiumFH += roundToNearest(result, 10)
+					}
+
+					for j := range dataSO {
+						if(dataSO[j].RetailStockZTE < dataSO[j].BatasBawahRetailZTE){
+							result = dataSO[j].BatasAtasRetailZTE - dataSO[j].RetailStockZTE
+							witelSlice[i].QtyKirimRetailZTE += roundToNearest(result, 10)
+						}
+
+						if(dataSO[j].RetailStockHuawei < dataSO[j].BatasBawahRetailHW){
+							result = dataSO[j].BatasAtasRetailHW - dataSO[j].RetailStockHuawei
+							witelSlice[i].QtyKirimRetailHW += roundToNearest(result, 10)
+						}
+
+						if(dataSO[j].RetailStockFiberhome < dataSO[j].BatasBawahRetailFH){
+							result = dataSO[j].BatasAtasRetailFH - dataSO[j].RetailStockFiberhome
+							witelSlice[i].QtyKirimRetailFH += roundToNearest(result, 10)
+						}
+
+						if(dataSO[j].RetailStockNokia < dataSO[j].BatasBawahRetailALU){
+							result = dataSO[j].BatasAtasRetailALU - dataSO[j].RetailStockNokia
+							witelSlice[i].QtyKirimRetailALU += roundToNearest(result, 10)
+						}
+
+						if(dataSO[j].PremiumStockZTE < dataSO[j].BatasBawahPremiumZTE){
+							result = dataSO[j].BatasAtasPremiumZTE - dataSO[j].PremiumStockZTE
+							witelSlice[i].QtyKirimPremiumZTE += roundToNearest(result, 10)
+						}
+
+						if(dataSO[j].PremiumStockHuawei < dataSO[j].BatasBawahPremiumHW){
+							result = dataSO[j].BatasAtasPremiumHW - dataSO[j].PremiumStockHuawei
+							witelSlice[i].QtyKirimPremiumHW += roundToNearest(result, 12)
+						}
+
+						if(dataSO[j].PremiumStockFiberhome < dataSO[j].BatasBawahPremiumFH){
+							result = dataSO[j].BatasAtasPremiumFH - dataSO[j].PremiumStockFiberhome
+							witelSlice[i].QtyKirimPremiumFH += roundToNearest(result, 10)
+						}
+
+						if(float64(dataSO[j].RetailStockZTE - dataSO[j].RetailZTE + dataSO[j].OnDeliveryRetailZTE) < -(float64(dataSO[j].RetailZTE) * 0.75)){
+							witelSlice[i].BlinkRetailZTE = 1
+						}
+
+						if(float64(dataSO[j].RetailStockHuawei - dataSO[j].RetailHW + dataSO[j].OnDeliveryRetailHuawei) < -(float64(dataSO[j].RetailHW) * 0.75)){
+							witelSlice[i].BlinkRetailHW = 1
+						}
+
+						if(float64(dataSO[j].RetailStockFiberhome - dataSO[j].RetailFH + dataSO[j].OnDeliveryRetailFiberhome) < -(float64(dataSO[j].RetailFH) * 0.75)){
+							witelSlice[i].BlinkRetailFH = 1
+						}
+
+						if(float64(dataSO[j].RetailStockNokia - dataSO[j].RetailALU + dataSO[j].OnDeliveryRetailNokia) < -(float64(dataSO[j].RetailALU) * 0.75)){
+							witelSlice[i].BlinkRetailALU = 1
+						}
+
+						if(float64(dataSO[j].PremiumStockZTE - dataSO[j].PremiumZTE + dataSO[j].OnDeliveryPremiumZTE) < -(float64(dataSO[j].PremiumZTE) * 0.75)){
+							witelSlice[i].BlinkPremiumZTE = 1
+						}
+
+						if(float64(dataSO[j].PremiumStockHuawei - dataSO[j].PremiumHW + dataSO[j].OnDeliveryPremiumHuawei) < -(float64(dataSO[j].PremiumHW) * 0.75)){
+							witelSlice[i].BlinkPremiumHW = 1
+						}
+
+						if(float64(dataSO[j].PremiumStockFiberhome - dataSO[j].PremiumFH + dataSO[j].OnDeliveryPremiumFiberhome) < -(float64(dataSO[j].PremiumFH) * 0.75)){
+							witelSlice[i].BlinkPremiumFH = 1
+						}
+
+						witelSlice[i].TotalRetail += dataSO[j].TotalRetail
+						witelSlice[i].TotalPremium += dataSO[j].TotalPremium
+						witelSlice[i].TotalRetailStock += dataSO[j].TotalRetailStock
+						witelSlice[i].TotalPremiumStock += dataSO[j].TotalPremiumStock
+						witelSlice[i].OnDeliveryTotalRetail += dataSO[j].OnDeliveryRetailHuawei + dataSO[j].OnDeliveryRetailFiberhome + dataSO[j].OnDeliveryRetailZTE + dataSO[j].OnDeliveryRetailNokia
+						witelSlice[i].OnDeliveryTotalPremium += dataSO[j].OnDeliveryPremiumHuawei + dataSO[j].OnDeliveryPremiumFiberhome + dataSO[j].OnDeliveryPremiumZTE
+					}
+				}
+			}
+		}else{
+			dataSO := filterDataWitelByWitel(tregSlice,lokasiWH)
+
+			for j:= 0; j < len(dataSO); j++ {
+				if(dataSO[j].RetailStockZTE < dataSO[j].BatasBawahRetailZTE){
+					result = dataSO[j].BatasAtasRetailZTE - dataSO[j].RetailStockZTE
+					dataSO[j].QtyKirimRetailZTE += roundToNearest(result, 10)
+				}
+
+				if(dataSO[j].RetailStockHuawei < dataSO[j].BatasBawahRetailHW){
+					result = dataSO[j].BatasAtasRetailHW - dataSO[j].RetailStockHuawei
+					dataSO[j].QtyKirimRetailHW += roundToNearest(result, 10)
+				}
+
+				if(dataSO[j].RetailStockFiberhome < dataSO[j].BatasBawahRetailFH){
+					result = dataSO[j].BatasAtasRetailFH - dataSO[j].RetailStockFiberhome
+					dataSO[j].QtyKirimRetailFH += roundToNearest(result, 10)
+				}
+
+				if(dataSO[j].RetailStockNokia < dataSO[j].BatasBawahRetailALU){
+					result = dataSO[j].BatasAtasRetailALU - dataSO[j].RetailStockNokia
+					dataSO[j].QtyKirimRetailALU += roundToNearest(result, 10)
+				}
+
+				if(dataSO[j].PremiumStockZTE < dataSO[j].BatasBawahPremiumZTE){
+					result = dataSO[j].BatasAtasPremiumZTE - dataSO[j].PremiumStockZTE
+					dataSO[j].QtyKirimPremiumZTE += roundToNearest(result, 10)
+				}
+
+				if(dataSO[j].PremiumStockHuawei < dataSO[j].BatasBawahPremiumHW){
+					result = dataSO[j].BatasAtasPremiumHW - dataSO[j].PremiumStockHuawei
+					dataSO[j].QtyKirimPremiumHW += roundToNearest(result, 12)
+				}
+
+				if(dataSO[j].PremiumStockFiberhome < dataSO[j].BatasBawahPremiumFH){
+					result = dataSO[j].BatasAtasPremiumFH - dataSO[j].PremiumStockFiberhome
+					dataSO[j].QtyKirimPremiumFH += roundToNearest(result, 10)
+				}
+
+				if(float64(dataSO[j].RetailStockZTE - dataSO[j].RetailZTE + dataSO[j].OnDeliveryRetailZTE) < -(float64(dataSO[j].RetailZTE) * 0.75)){
+					dataSO[j].BlinkRetailZTE = 1
+				}
+
+				if(float64(dataSO[j].RetailStockHuawei - dataSO[j].RetailHW + dataSO[j].OnDeliveryRetailHuawei) < -(float64(dataSO[j].RetailHW) * 0.75)){
+					dataSO[j].BlinkRetailHW = 1
+				}
+
+				if(float64(dataSO[j].RetailStockFiberhome - dataSO[j].RetailFH + dataSO[j].OnDeliveryRetailFiberhome) < -(float64(dataSO[j].RetailFH) * 0.75)){
+					dataSO[j].BlinkRetailFH = 1
+				}
+
+				if(float64(dataSO[j].RetailStockNokia - dataSO[j].RetailALU + dataSO[j].OnDeliveryRetailNokia) < -(float64(dataSO[j].RetailALU) * 0.75)){
+					dataSO[j].BlinkRetailALU = 1
+				}
+
+				if(float64(dataSO[j].PremiumStockZTE - dataSO[j].PremiumZTE + dataSO[j].OnDeliveryPremiumZTE) < -(float64(dataSO[j].PremiumZTE) * 0.75)){
+					dataSO[j].BlinkPremiumZTE = 1
+				}
+
+				if(float64(dataSO[j].PremiumStockHuawei - dataSO[j].PremiumHW + dataSO[j].OnDeliveryPremiumHuawei) < -(float64(dataSO[j].PremiumHW) * 0.75)){
+					dataSO[j].BlinkPremiumHW = 1
+				}
+
+				if(float64(dataSO[j].PremiumStockFiberhome - dataSO[j].PremiumFH + dataSO[j].OnDeliveryPremiumFiberhome) < -(float64(dataSO[j].PremiumFH) * 0.75)){
+					dataSO[j].BlinkPremiumFH = 1
+				}
+			}
+
+			data["response"] = dataSO
+		}
+		
+	}
+	return data
+}
+
+func (s *dataTmpService) RekapDeliveryTREG() map[string]interface{}{
 	data := s.CountDataPerWitelTmp()
 	// data = s.HitungQtyKirim(data)
 	var result int
@@ -302,37 +656,37 @@ func (s *dataTmpService) RekapDelivery() map[string]interface{}{
 					for j := range dataSO{
 						if(dataSO[j].RetailStockZTE < dataSO[j].BatasBawahRetailZTE){
 							result = dataSO[j].BatasAtasRetailZTE - dataSO[j].RetailStockZTE
-							sumZTE += roundToNearest(result, 20)
+							sumZTE += roundToNearest(result, 10)
 						}
 
 						if(dataSO[j].RetailStockHuawei < dataSO[j].BatasBawahRetailHW){
 							result = dataSO[j].BatasAtasRetailHW - dataSO[j].RetailStockHuawei
-							sumHW += roundToNearest(result, 20)
+							sumHW += roundToNearest(result, 10)
 						}
 
 						if(dataSO[j].RetailStockFiberhome < dataSO[j].BatasBawahRetailFH){
 							result = dataSO[j].BatasAtasRetailFH - dataSO[j].RetailStockFiberhome
-							sumFH += roundToNearest(result, 20)
+							sumFH += roundToNearest(result, 10)
 						}
 
 						if(dataSO[j].RetailStockNokia < dataSO[j].BatasBawahRetailALU){
 							result = dataSO[j].BatasAtasRetailALU - dataSO[j].RetailStockNokia
-							sumALU += roundToNearest(result, 20)
+							sumALU += roundToNearest(result, 6)
 						}
 
 						if(dataSO[j].PremiumStockZTE < dataSO[j].BatasBawahPremiumZTE){
 							result = dataSO[j].BatasAtasPremiumZTE - dataSO[j].PremiumStockZTE
-							sumPZTE += roundToNearest(result, 20)
+							sumPZTE += roundToNearest(result, 10)
 						}
 
 						if(dataSO[j].PremiumStockHuawei < dataSO[j].BatasBawahPremiumHW){
 							result = dataSO[j].BatasAtasPremiumHW - dataSO[j].PremiumStockHuawei
-							sumPHW += roundToNearest(result, 20)
+							sumPHW += roundToNearest(result, 12)
 						}
 
 						if(dataSO[j].PremiumStockFiberhome < dataSO[j].BatasBawahPremiumFH){
 							result = dataSO[j].BatasAtasPremiumFH - dataSO[j].PremiumStockFiberhome
-							sumPHW += roundToNearest(result, 20)
+							sumPFH += roundToNearest(result, 8)
 						}
 
 						if(float64(dataSO[j].RetailStockZTE - dataSO[j].RetailZTE + dataSO[j].OnDeliveryRetailZTE) < -(float64(dataSO[j].RetailZTE) * 0.75)){
@@ -391,37 +745,37 @@ func (s *dataTmpService) RekapDelivery() map[string]interface{}{
 					for j := range dataSO{
 						if(dataSO[j].RetailStockZTE < dataSO[j].BatasBawahRetailZTE){
 							result = dataSO[j].BatasAtasRetailZTE - dataSO[j].RetailStockZTE
-							sumZTE += roundToNearest(result, 20)
+							sumZTE += roundToNearest(result, 10)
 						}
 
 						if(dataSO[j].RetailStockHuawei < dataSO[j].BatasBawahRetailHW){
 							result = dataSO[j].BatasAtasRetailHW - dataSO[j].RetailStockHuawei
-							sumHW += roundToNearest(result, 20)
+							sumHW += roundToNearest(result, 10)
 						}
 
 						if(dataSO[j].RetailStockFiberhome < dataSO[j].BatasBawahRetailFH){
 							result = dataSO[j].BatasAtasRetailFH - dataSO[j].RetailStockFiberhome
-							sumFH += roundToNearest(result, 20)
+							sumFH += roundToNearest(result, 10)
 						}
 
 						if(dataSO[j].RetailStockNokia < dataSO[j].BatasBawahRetailALU){
 							result = dataSO[j].BatasAtasRetailALU - dataSO[j].RetailStockNokia
-							sumALU += roundToNearest(result, 20)
+							sumALU += roundToNearest(result, 10)
 						}
 
 						if(dataSO[j].PremiumStockZTE < dataSO[j].BatasBawahPremiumZTE){
 							result = dataSO[j].BatasAtasPremiumZTE - dataSO[j].PremiumStockZTE
-							sumPZTE += roundToNearest(result, 20)
+							sumPZTE += roundToNearest(result, 10)
 						}
 
 						if(dataSO[j].PremiumStockHuawei < dataSO[j].BatasBawahPremiumHW){
 							result = dataSO[j].BatasAtasPremiumHW - dataSO[j].PremiumStockHuawei
-							sumPHW += roundToNearest(result, 20)
+							sumPHW += roundToNearest(result, 12)
 						}
 
 						if(dataSO[j].PremiumStockFiberhome < dataSO[j].BatasBawahPremiumFH){
 							result = dataSO[j].BatasAtasPremiumFH - dataSO[j].PremiumStockFiberhome
-							sumPHW += roundToNearest(result, 20)
+							sumPHW += roundToNearest(result, 8)
 						}
 
 						if(float64(dataSO[j].RetailStockZTE - dataSO[j].RetailZTE + dataSO[j].OnDeliveryRetailZTE) < -(float64(dataSO[j].RetailZTE) * 0.75)){
@@ -540,6 +894,7 @@ func (s *dataTmpService) RekapDelivery() map[string]interface{}{
 		}
 
 		data["jenis_warehouse"] = "Witel"
+		data["treg"] = filterDataTREGMinimumResponseByTREG(witelSlice)
 
 		return data
 	}

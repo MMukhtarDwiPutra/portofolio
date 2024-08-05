@@ -76,6 +76,12 @@ type TREGMinimumResponse struct{
 	BlinkPremiumZTE int `bson:"blink_premium_zte" json:"blink_premium_zte"`
 	BlinkPremiumFH int `bson:"blink_premium_fh" json:"blink_premium_fh"`
 	BlinkPremiumHW int `bson:"blink_premium_hw" json:"blink_premium_hw"`
+	TotalRetailStock int `bson:"total_retail_stock" json:"total_retail_stock"`
+	TotalRetail int `bson:"total_retail" json:"total_retail"`
+	OnDeliveryTotalRetail int `bson:"on_delivery_total_retail" json:"on_delivery_total_retail"`
+	TotalPremiumStock int `bson:"total_premium_stock" json:"total_premium_stock"`
+	TotalPremium int `bson:"total_premium" json:"total_premium"`
+	OnDeliveryTotalPremium int `bson:"on_delivery_total_premium" json:"on_delivery_total_premium"`
 }
 
 type LokasiWarehouseResponse struct{

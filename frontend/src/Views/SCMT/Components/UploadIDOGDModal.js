@@ -30,7 +30,7 @@ const UploadIDOGDModal = ({ showModal, handleCloseModal, handleClick }) => {
           Cancel
         </Button>
         <Button variant="primary" onClick={handleClick}>
-          Tambah Data
+          Upload IDO GD
         </Button>
       </Modal.Footer>
     </Modal>

@@ -5610,7 +5610,6 @@ h1,h2,h3,h4,h5,.h1,.h2,.h3,.h4,.h5 {
     background: #fff;
     border: none;
     border-radius: 0;
-    margin-bottom: 40px;
     -webkit-box-shadow: 1px 1px 3px rgba(0,0,0,.1);
     box-shadow: 1px 1px 3px rgba(0,0,0,.1)
 }
@@ -5655,7 +5654,8 @@ h1,h2,h3,h4,h5,.h1,.h2,.h3,.h4,.h5 {
 }
 
 #sidebar h1 .logo {
-    color: #fff
+    color: #fff;
+    font-size: 2.5rem;
 }
 
 #sidebar ul.components {
@@ -5787,3 +5787,14 @@ a[data-toggle=collapse] {
     display: block;
     margin-top: 0;
 }
+/*
+.fa-bars:before {
+    content: "\f0c9"
+}
+
+.fa,
+.fas {
+  font-family: 'Font Awesome 5 Free';
+  font-weight: 900; 
+}
+*/

@@ -7,7 +7,7 @@ import(
 	"portofolio.com/domain"
 	"portofolio.com/domain/scmt"
 	"github.com/gorilla/mux"
-	"fmt"
+	// "fmt"
 	// "encoding/json"
 	// "strconv"
 )
@@ -114,14 +114,27 @@ func (c *dataTmpController) CountAPPerWitel(w http.ResponseWriter, r *http.Reque
 }
 
 
-func (c *dataTmpController) Testing(w http.ResponseWriter, r *http.Request){
-	countResponse := c.dataTmpService.RekapDelivery();
-	fmt.Println("tes bawah")
+func (c *dataTmpController) GetRekapDeliveryTREG(w http.ResponseWriter, r *http.Request){
+	countResponse := c.dataTmpService.RekapDeliveryTREG();
 
 	webResponse := web.WebResponse{
 		Code : 200,
 		Status : "OK",
-		Data : countResponse,
+		Data : countResponse["treg"],
+	}
+
+	helper.WriteToResponseBody(w, webResponse)
+}
+
+func (c *dataTmpController) GetRekapDeliveryWitel(w http.ResponseWriter, r *http.Request){
+	params := mux.Vars(r)
+	lokasiWH, _ := params["lokasi_wh"]
+	countResponse := c.dataTmpService.RekapDeliveryWitel(lokasiWH);
+
+	webResponse := web.WebResponse{
+		Code : 200,
+		Status : "OK",
+		Data : countResponse["response"],
 	}
 
 	helper.WriteToResponseBody(w, webResponse)

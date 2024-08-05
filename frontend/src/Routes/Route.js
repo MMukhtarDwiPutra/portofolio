@@ -14,7 +14,8 @@ function RoutesIndex() {
             <Route path="/" element={<Home />} />
             <Route path="/landing_page" element={<LandingPage />} />
             <Route path="/page_1" element={<Page1 />} />
-            <Route path="/scmt" element={<HomeSCMT />} />
+            <Route path="/scmt/rekap_delivery" element={<HomeSCMT />} />
+            <Route path="/scmt/rekap_delivery/witel/:lokasi_wh" element={<HomeSCMT />} />
             <Route path="/scmt/report_delivery_ont" element={<PenerimaONT />} />
         </Routes>
     )

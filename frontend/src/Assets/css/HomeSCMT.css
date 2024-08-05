@@ -1,0 +1,36 @@
+.thead-grey{
+	--bs-table-bg:grey;
+	--bs-table-color:white;
+	--bs-table-color-state: white;
+}
+
+.font-grey{
+	--bs-table-color-state: gray
+}
+
+.bolding-font{
+	font-weight: bold;
+	color: gray;
+}
+
+.table{
+	font-size:14px;
+	font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+.td-red{
+	background-color : red; 
+	color: white;
+}
+
+.td-yellow{
+	--bs-table-bg: yellow;
+}
+
+.td-green{
+	--bs-table-bg: #77DD77;
+}
+
+.table td{
+	padding: .75rem;
+}

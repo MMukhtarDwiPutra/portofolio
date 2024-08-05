@@ -9,6 +9,17 @@ import 'bootstrap/dist/js/bootstrap.min.js'
 import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
 
 export default function Sidebar(){
+	useEffect(() => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css';
+    document.head.appendChild(link);
+
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, []);
+
 	const [sidebarActive, setSidebarActive] = useState(true);
 
   const toggleSidebar = () => {
@@ -48,7 +59,7 @@ export default function Sidebar(){
 				            <a href="#" data-toggle="collapse" onClick={() => toggleCollapse(0)} aria-expanded="false" className="dropdown-toggle">Minimum Stock ONT</a>
 				            <ul className={collapseActive[0] ? 'collapse list-unstyled components' : 'list-unstyled components'} id="SubMenu0">
 				                <li>
-				                    <Link className="nav-link active" to="/scmt">Rekap Minimum Stock ONT</Link>
+				                    <Link className="nav-link active" to="/scmt/rekap_delivery">Rekap Minimum Stock ONT</Link>
 				                </li>
 				                <li>
 					                <Link className="nav-link active" to="/scmt/report_delivery_ont">Report Delivery ONT</Link>

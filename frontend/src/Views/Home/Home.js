@@ -18,7 +18,7 @@ export default function Home(){
 	            <span className="mt-3"><b> Aidikei </b></span>
             </Col>
             <Col xs={6} md={4} className="text-center mt-5">
-            	<a href="scmt">
+            	<a href="/scmt/rekap_delivery">
 	            	<Image src={image2} fluid />
 	            </a>
 	            <span className="mt-3"><b> SCMT </b></span>
