@@ -7,6 +7,9 @@ import(
 	"strings"
 	"fmt"
 	"reflect"
+	"github.com/xuri/excelize/v2"
+	"time"
+	"strconv"
 )
 
 type DataTmpService interface{
@@ -22,6 +25,11 @@ type DataTmpService interface{
 	HitungQtyKirim(data map[string]interface{}) map[string]interface{}
 	RekapDeliveryTREG() map[string]interface{}
 	RekapDeliveryWitel(lokasiWH string) map[string]interface{}
+	GetExportDataTmp() ([]byte, string, error)
+	GetExportMinimumStockDatabase() ([]byte, string, error)
+	DownloadTemplateMinimumStock() ([]byte, string, error)
+	DownloadTemplateDataTmp() ([]byte, string, error)
+	UploadDataTmp()
 }
 
 type dataTmpService struct{
@@ -1071,26 +1079,165 @@ func setField(obj interface{}, fieldName string, value int) error {
     return nil
 }
 
+func (s *dataTmpService) GetExportDataTmp() ([]byte, string, error){
+	var filename string
+	var dataTmp []domain.DataTmp
 
-// public function addStockCount($jenis_stock, $data, $merk){
-// 	$array_stock = $data[$merk];
-// 	$witel = Data::getWitelsFromDataByMerk($merk);
-	
-// 	for ($i=0; $i < count($data["witel"]); $i++) {
-// 		$nama_witel = $data["witel"][$i]->lokasi_wh;
+	templatePath := "template/template_data_tmp.xlsx"
+    fileExport, err := excelize.OpenFile(templatePath)
+    helper.PanicIfError(err)
 
-// 		$filtered_array = array_filter($array_stock, function ($obj) use ($nama_witel){
-// 		  return str_contains(strtolower($nama_witel), strtolower($obj->witel));
-// 		});
+    // Get the active sheet index
+    activeSheetIndexExport := fileExport.GetActiveSheetIndex()
 
-// 		if(count($filtered_array) == 0){
-// 			$data["witel"][$i]->{$jenis_stock."_stock_".$merk} = 0;
-// 		}else{
-// 			$tmp_stock = current($filtered_array)->stock;
+    // Get the name of the active sheet using the index
+    activeSheetNameExport := fileExport.GetSheetName(activeSheetIndexExport)
 
-// 			$data["witel"][$i]->{$jenis_stock."_stock_".$merk} = $tmp_stock;
-// 		}
-// 	}
+	// Get the current time
+	currentTime := time.Now()
 
-// 	return $data;
-// }
+	// Format the time as YYYY-MM-DD
+	formattedDate := currentTime.Format("2006-01-02")
+
+	filename = "Exported_Data_Tmp "+formattedDate+".xlsx"
+
+	dataTmp = s.dataTmpRepository.GetExportDataTmp();
+
+    // Set values in cells
+    for i := range dataTmp{
+	    fileExport.SetCellValue(activeSheetNameExport, "A"+strconv.Itoa(i+2), dataTmp[i].Region)
+	    fileExport.SetCellValue(activeSheetNameExport, "B"+strconv.Itoa(i+2), dataTmp[i].LokasiWH)
+	    fileExport.SetCellValue(activeSheetNameExport, "C"+strconv.Itoa(i+2), dataTmp[i].Status)
+	    fileExport.SetCellValue(activeSheetNameExport, "D"+strconv.Itoa(i+2), dataTmp[i].Jumlah)
+	    fileExport.SetCellValue(activeSheetNameExport, "E"+strconv.Itoa(i+2), dataTmp[i].Deskripsi)
+	}
+
+    // Set active sheet of the workbook
+    fileExport.SetActiveSheet(activeSheetIndexExport)
+
+    bytesBuffer, err := fileExport.WriteToBuffer()
+
+	//Export to download
+	return bytesBuffer.Bytes(), filename, err
+}
+
+func (s *dataTmpService) DownloadTemplateMinimumStock() ([]byte, string, error){
+	filename := "template_database_minimum_stock.xlsx"
+	templatePath := "template/template_database.xlsx"
+    fileExport, err := excelize.OpenFile(templatePath)
+    helper.PanicIfError(err)
+
+    bytesBuffer, err := fileExport.WriteToBuffer()
+
+	//Export to download
+	return bytesBuffer.Bytes(), filename, err
+}
+
+func (s *dataTmpService) DownloadTemplateDataTmp() ([]byte, string, error){
+	filename := "template_data_tmp.xlsx"
+	templatePath := "template/template_data_tmp.xlsx"
+    fileExport, err := excelize.OpenFile(templatePath)
+    helper.PanicIfError(err)
+
+    bytesBuffer, err := fileExport.WriteToBuffer()
+
+	//Export to download
+	return bytesBuffer.Bytes(), filename, err
+}
+
+
+
+func (s *dataTmpService) GetExportMinimumStockDatabase() ([]byte, string, error){
+	var filename string
+
+	templatePath := "template/template_database.xlsx"
+    fileExport, err := excelize.OpenFile(templatePath)
+    helper.PanicIfError(err)
+
+    // Get the active sheet index
+    activeSheetIndexExport := fileExport.GetActiveSheetIndex()
+
+    // Get the name of the active sheet using the index
+    activeSheetNameExport := fileExport.GetSheetName(activeSheetIndexExport)
+
+	// Get the current time
+	currentTime := time.Now()
+
+	// Format the time as YYYY-MM-DD
+	formattedDate := currentTime.Format("2006-01-02")
+
+	filename = "Exported_Database_Minimum_Stock "+formattedDate+".xlsx"
+
+	dataGudang := s.gudangRepository.GetAllData();
+
+	j := 0
+    // Set values in cells
+    for i:=4; i < len(dataGudang); i++{
+	    fileExport.SetCellValue(activeSheetNameExport, "A"+strconv.Itoa(i), dataGudang[j].Regional)
+	    fileExport.SetCellValue(activeSheetNameExport, "B"+strconv.Itoa(i), dataGudang[j].Witel)
+	    fileExport.SetCellValue(activeSheetNameExport, "C"+strconv.Itoa(i), dataGudang[j].LokasiWH)
+	    fileExport.SetCellValue(activeSheetNameExport, "D"+strconv.Itoa(i), dataGudang[j].Lokasi)
+	    fileExport.SetCellValue(activeSheetNameExport, "E"+strconv.Itoa(i), dataGudang[j].Wilayah)
+	    fileExport.SetCellValue(activeSheetNameExport, "F"+strconv.Itoa(i), dataGudang[j].MinimumQty)
+	    fileExport.SetCellValue(activeSheetNameExport, "G"+strconv.Itoa(i), dataGudang[j].RetailFH)
+	    fileExport.SetCellValue(activeSheetNameExport, "H"+strconv.Itoa(i), dataGudang[j].RetailHW)
+	    fileExport.SetCellValue(activeSheetNameExport, "I"+strconv.Itoa(i), dataGudang[j].RetailZTE)
+	    fileExport.SetCellValue(activeSheetNameExport, "J"+strconv.Itoa(i), dataGudang[j].RetailALU)
+	    fileExport.SetCellValue(activeSheetNameExport, "K"+strconv.Itoa(i), dataGudang[j].PremiumFH)
+	    fileExport.SetCellValue(activeSheetNameExport, "L"+strconv.Itoa(i), dataGudang[j].PremiumHW)
+	    fileExport.SetCellValue(activeSheetNameExport, "M"+strconv.Itoa(i), dataGudang[j].PremiumZTE)
+	    fileExport.SetCellValue(activeSheetNameExport, "N"+strconv.Itoa(i), dataGudang[j].STBZTE)
+	    fileExport.SetCellValue(activeSheetNameExport, "O"+strconv.Itoa(i), dataGudang[j].APCisco)
+	    fileExport.SetCellValue(activeSheetNameExport, "P"+strconv.Itoa(i), dataGudang[j].APHuawei)
+	    j+=1
+	}
+
+    // Set active sheet of the workbook
+    fileExport.SetActiveSheet(activeSheetIndexExport)
+
+    bytesBuffer, err := fileExport.WriteToBuffer()
+
+	//Export to download
+	return bytesBuffer.Bytes(), filename, err
+}
+
+func (s *dataTmpService) UploadDataTmp(){
+	s.dataTmpRepository.DeleteAllDataTmp()
+	templatePath := "template/uploaded_data_tmp.xlsx"
+    spreadsheetImport, err := excelize.OpenFile(templatePath)
+    helper.PanicIfError(err)
+
+    // Get the active sheet index
+    activeSheetIndexUploaded := spreadsheetImport.GetActiveSheetIndex()
+
+    // Get the name of the active sheet using the index
+    activeSheetName := spreadsheetImport.GetSheetName(activeSheetIndexUploaded)
+
+    rows, err := spreadsheetImport.GetRows(activeSheetName)
+    helper.PanicIfError(err)
+
+    var dataTmps []domain.DataTmp
+
+    // Get the maximum number of rows
+    maxRows := len(rows)
+    for i := 2; i < maxRows+1; i++{
+    	var dataTmp domain.DataTmp
+
+    	dataTmp.Region, err = spreadsheetImport.GetCellValue(activeSheetName, "A"+strconv.Itoa(i))
+    	dataTmp.LokasiWH, err = spreadsheetImport.GetCellValue(activeSheetName, "B"+strconv.Itoa(i))
+    	dataTmp.Status, err = spreadsheetImport.GetCellValue(activeSheetName, "C"+strconv.Itoa(i))
+    	dataTmp.Jumlah, err = spreadsheetImport.GetCellValue(activeSheetName, "D"+strconv.Itoa(i))
+    	dataTmp.Deskripsi, err = spreadsheetImport.GetCellValue(activeSheetName, "E"+strconv.Itoa(i))
+    	
+    	dataTmps = append(dataTmps, dataTmp)
+    }
+
+	s.dataTmpRepository.UploadDataTmpBulk(dataTmps)
+
+	// Ensure the file is closed properly
+    defer func() {
+        if err := spreadsheetImport.Close(); err != nil {
+            helper.PanicIfError(err)
+        }
+    }()
+}

@@ -18,6 +18,9 @@ type DataTmpRepository interface{
 	CountSTBPerWitel(merk string) []domain.CountResponse
 	CountAPPerWitel(merk string) []domain.CountResponse
 	GetWitelsFromDataByMerk(merk string) []string
+	GetExportDataTmp() []domain.DataTmp
+	DeleteAllDataTmp()
+	UploadDataTmpBulk(dataTmps []domain.DataTmp)
 }
 
 type dataTmpRepository struct{
@@ -193,3 +196,37 @@ func (r *dataTmpRepository) GetWitelsFromDataByMerk(merk string) []string{
 	return witels
 }
 
+func (r *dataTmpRepository) GetExportDataTmp() []domain.DataTmp{
+	var dataTmpExports []domain.DataTmp
+	
+	rows, err := r.db.Query("SELECT * FROM data_tmp")
+	helper.PanicIfError(err)
+
+	for rows.Next(){
+		var dataTmpExport domain.DataTmp
+
+		err = rows.Scan(&dataTmpExport.ID, &dataTmpExport.Region, &dataTmpExport.LokasiWH, &dataTmpExport.Status, &dataTmpExport.Jumlah, &dataTmpExport.Deskripsi)
+		helper.PanicIfError(err)
+
+		dataTmpExports = append(dataTmpExports, dataTmpExport)
+	}
+
+	return dataTmpExports
+}
+
+func (r *dataTmpRepository) DeleteAllDataTmp(){
+	_, err := r.db.Query("DELETE FROM data_tmp")
+	helper.PanicIfError(err)
+}
+
+func (r *dataTmpRepository) UploadDataTmpBulk(dataTmps []domain.DataTmp){
+	query := "INSERT INTO `data_tmp`(`region`, `lokasi_wh`, `status`, `jumlah`, `deskripsi`) VALUES "
+
+	for i := range dataTmps{
+		query += "( '"+dataTmps[i].Region+"','"+dataTmps[i].LokasiWH+"','"+ dataTmps[i].Status+"','"+ dataTmps[i].Jumlah+"','"+ dataTmps[i].Deskripsi+"'),"
+	}
+
+	query = query[:len(query)-1]
+	_, err := r.db.Query(query)
+	helper.PanicIfError(err)
+}

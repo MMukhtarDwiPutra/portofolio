@@ -1,6 +1,6 @@
 import Sidebar from "./Components/Sidebar"
 import Navbar from "./Components/Navbar"
-import React, {Component, useEffect, StrictMode, useState  } from 'react'
+import React, {Component, useEffect, StrictMode, useState, useRef  } from 'react'
 import DataTable from 'react-data-table-component';
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
@@ -16,6 +16,26 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 const PenerimaONT = () => {
 	const [showModalEdit, setShowModalEdit] = useState(false);
 	const [currentItemEdit, setCurrentItemEdit] = useState(null);
+	const fileInputRef = useRef(null); // Create a reference for the file input
+	const [login, setLogin] = useState(false)
+	const fetchDataUser = async () =>{
+        try{
+            let response;
+            response = await fetch(`http://localhost:8080/api/user`, { 
+                    headers: {'Content-Type': 'application/json'},
+                    credentials: 'include',
+                })
+
+            const result = await response.json();
+            if(result.data.username){
+            	setLogin(true)
+            }
+        }catch(error){
+        }
+    }
+    useEffect(() => {
+	    fetchDataUser();
+  	}, []);
 
 	const handleEditClick = (id) => {
 		const item = dataPenerima.find((item) => item.id === id);
@@ -55,9 +75,8 @@ const PenerimaONT = () => {
 		try {
 		  	const response = await fetch(`http://localhost:8080/api/delete_penerima/${currentItemDeleteByID.id}`, {
 			    method: 'DELETE',
-			    headers: {
-			      'Content-Type': 'application/json',
-			    },
+                headers: {'Content-Type': 'application/json'},
+                credentials: 'include',
 		  });
 
 		  if (!response.ok) {
@@ -91,6 +110,7 @@ const PenerimaONT = () => {
 			    headers: {
 			      'Content-Type': 'application/json',
 			    },
+			    credentials: 'include',
 		  });
 
 		  if (!response.ok) {
@@ -139,19 +159,6 @@ const PenerimaONT = () => {
 	};
 
 	const [message, setMessage] = useState('');
-
-	// Simulate fetching message from a session or API
-	// useEffect(() => {
-	// 	// Example: Simulate a message from a session or some external source
-	// 	const fetchMessage = () => {
-	// 	  // Simulate getting a message
-	// 	  // const sessionMessage = 'This is a session message!';
-	// 	  // setMessage(sessionMessage);
-	// 	}; 
-
-	// 	fetchMessage();
-	// }, []);
-
 	const [jenisAkun, setJenisAkun] = useState('');
 
 	const fetchJenisAkun = () => {
@@ -181,17 +188,23 @@ const PenerimaONT = () => {
 	const [data, setData] = useState([]);
 	const [loading, setLoading] = useState(true);
   	const [error, setError] = useState(null);
+  	const [lastUpdate, setLastUpdate] = useState(null)
 
 	const fetchDataPenerima = async () => {
 		// Simulate an API call
 		try {
 			// console.log("HIT Get Fetch Data Penerima")
-			const response = await fetch('http://localhost:8080/api/get_pengiriman_ont'); // Replace with your API endpoint
+			const response = await fetch('http://localhost:8080/api/get_pengiriman_ont', {
+                    headers: {'Content-Type': 'application/json'},
+                    credentials: 'include',
+            });; // Replace with your API endpoint
+
 			const result = await response.json();
 			if (result.data.penerima != null) {
 			  setDataPenerima(result["data"].penerima);
 			  setDataWarehouse(result["data"].warehouse)
 			  setData(result["data"].penerima)
+			  setLastUpdate(result["data"].last_update)
 			}else{
 			  	setDataPenerima([]);
 			  	setData([])
@@ -265,7 +278,8 @@ const PenerimaONT = () => {
 	    }
 
 	    try {
-	      const response = await fetch('http://localhost:8080/api/tambah_penerima_bulk', {
+	      const response = await fetch('http://localhost:8080/api/tambah_penerima_bulk/add_only', {
+            credentials: 'include',
 	        method: 'POST',
 	        body: formData,
 	      });
@@ -280,6 +294,9 @@ const PenerimaONT = () => {
 	      }
 	    } catch (error) {
 	      console.error('Error:', error);
+	    } finally{
+	    	setFilePenerima(null); // Reset state
+      		fileInputRef.current.value = '';
 	    }
 	  };
 
@@ -289,24 +306,30 @@ const PenerimaONT = () => {
 	      selector: (row, index) => index + 1,
 	      center: 'true',
 	      width: '50px',
-	    },{
-	      name: 'Action',
-	      selector: (row) => row.id,
-	      cell: (row) => {
-	        let btn = (
-	          <button
-	            className="btn btn-danger"
-	            onClick={() => handleDeleteByID(row.id)}
-	          >
-	            Delete
-	          </button>
-	        );
+	    },
+	    ...(login 
+	    ? [
+		    {
+		      name: 'Action',
+		      selector: (row) => row.id,
+		      cell: (row) => {
+		        let btn = (
+		          <button
+		            className="btn btn-danger"
+		            onClick={() => handleDeleteByID(row.id)}
+		          >
+		            Delete
+		          </button>
+		        );
 
-	        return btn;
-	      },
-	      center: 'true',
-	      width: '120px',
-	    },{
+		        return btn;
+		      },
+		      center: 'true',
+		      width: '120px',
+	    	},
+	      ]
+	    : []),
+	    {
 	      name: 'Type',
 	      selector: (row, index) => row.type,
 	      center: 'true',
@@ -355,7 +378,10 @@ const PenerimaONT = () => {
 	      selector: (row, index) => row.batch,
 	      center: 'true',
 	      width: '120px',
-	    },{
+	    },
+	    ...(login 
+	     ? [
+	    {
 	      name: 'Edit',
 	      selector: (row) => row.id,
 	      cell: (row) => {
@@ -388,6 +414,7 @@ const PenerimaONT = () => {
 	      center: 'true',
 	      width: '220px',
 	    }
+	    ]: []),
 	]
 
 	return(
@@ -398,6 +425,7 @@ const PenerimaONT = () => {
 	            <div className="container-fluid" style={{width: "105.5%"}}>
 					<Navbar/>
 
+					{login && (
                     <div className="card mt-5">
                         <form onSubmit={handleUploadPenerima} className="mt-3" style={{paddingLeft: "15px", paddingRight: "15px", paddingBottom: "15px"}}
                             method="POST" encType="multipart/form-data">
@@ -406,7 +434,7 @@ const PenerimaONT = () => {
                             </div>
                             <div className="row mt-3">
                                 <div className="col-sm-12 col-md-4 mb-3">
-                                    <input className="form-control" type="file" style={{height: "45px"}} name="file_penerima" onChange={handleFilePenerimaChange} required></input>
+                                    <input className="form-control" ref={fileInputRef} type="file" style={{height: "45px"}} name="file_penerima" onChange={handleFilePenerimaChange} required></input>
                                 </div>
                                 <div className="col-sm-12 col-md-8">
                                     <div className="row">
@@ -420,6 +448,7 @@ const PenerimaONT = () => {
                             </div>
                         </form>
                     </div>
+                    )}
 
 	                <div className="card mb-3 mt-3">
 	                    {message && (
@@ -429,35 +458,34 @@ const PenerimaONT = () => {
 	                    )}
 
 	                    <div className="card-body mb-2">
-	                        <div className="row">
-	                            <div className="col-md-6 col-lg-5">
-	                                <a className="btn btn-secondary mb-2" href="http://localhost:8080/api/export_all_penerima">Export</a>
-	                                <a className="btn btn-secondary mb-2 ml-1" href="http://localhost:8080/api/download_all_sn_ont_exist">Download All SN Exist</a>
-	                                <a className="btn btn-secondary mb-2 ml-1" href="http://localhost:8080/api/download_all_sn_ont">Download All SN</a>
-	                            </div>
 
-	                            {jenisAkun === "Admin" ? ( 
-	                                <div className="col-md-6 col-lg-7 col-xl-7">
-	                                    <div className="d-flex justify-content-end align-items-center">
-	                                        <a className="btn btn-primary btn-sm mx-1" data-toggle="modal"
-	                                            data-target="#tambahModal" onClick={() => handleTambahModal()}>Tambah</a>
-	                                        <a className="btn btn-danger btn-sm mx-1" data-toggle="modal"
-	                                            data-target="#hapusModal" onClick={() => handleDeleteAll()}>Delete All</a>
-	                                    </div>
-	                                </div>
-	                            ) : (
-	                            	<div>
-	                            	</div>
-	                            )}
-	                        </div>
+	                    	{login && (
+		                        <div className="row">
+		                            <div className="col-md-6 col-lg-5">
+		                                <a className="btn btn-secondary mb-2" href="http://localhost:8080/api/export_all_penerima_ont">Export</a>
+		                                <a className="btn btn-secondary mb-2 ml-1" href="http://localhost:8080/api/download_all_sn_ont_exist">Download All SN Exist</a>
+		                                <a className="btn btn-secondary mb-2 ml-1" href="http://localhost:8080/api/download_all_sn_ont">Download All SN</a>
+		                            </div>
 
-	                        {asal === "DID" && ( 
-	                        <div className="row mb-3">
-	                            <div className="col-md-6 col-lg-5">
-	                                <a className="btn btn-primary mb-2" data-toggle="modal" data-target="#editIdoGDBulk" onClick={() => handleUploadIDOGD()} >Upload IDO GD Bulk</a>
-	                            </div>
-	                        </div>
+		                            {jenisAkun === "Admin" ? ( 
+		                                <div className="col-md-6 col-lg-7 col-xl-7">
+		                                    <div className="d-flex justify-content-end align-items-center">
+		                                        <a className="btn btn-primary btn-sm mx-1" data-toggle="modal"
+		                                            data-target="#tambahModal" onClick={() => handleTambahModal()}>Tambah</a>
+		                                        <a className="btn btn-danger btn-sm mx-1" data-toggle="modal"
+		                                            data-target="#hapusModal" onClick={() => handleDeleteAll()}>Delete All</a>
+		                                    </div>
+		                                </div>
+		                            ) : null}
+		                        </div>
 	                        )}
+	                        {login && asal === "DID" && ( 
+		                        <div className="row mb-3">
+		                            <div className="col-md-6 col-lg-5">
+		                                <a className="btn btn-primary mb-2" data-toggle="modal" data-target="#editIdoGDBulk" onClick={() => handleUploadIDOGD()} >Upload IDO GD Bulk</a>
+		                            </div>
+		                        </div>
+		                    )}
 
 	                        <div className="row d-flex justify-content-end mb-1 mr-2">
                                 <div className="col-auto">
@@ -485,7 +513,7 @@ const PenerimaONT = () => {
 	                        </div>
 	                        
 
-	                        <span>Last update: </span>
+	                        {lastUpdate && (<span>Last update: {lastUpdate} </span>)}
 	                        <div className="table-responsive mt-2">
 	                            {statusFillingDisable === "OFF" ? ( 
 	                            <div className="table-responsive">

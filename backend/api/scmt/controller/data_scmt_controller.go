@@ -7,6 +7,8 @@ import(
 	"portofolio.com/domain"
 	"portofolio.com/domain/scmt"
 	"github.com/gorilla/mux"
+	"os"
+	"io"
 	// "fmt"
 	// "encoding/json"
 	// "strconv"
@@ -23,8 +25,8 @@ type dataTmpController struct{
 	dataTmpService service.DataTmpService
 }
 
-func NewDataTmpController(service service.DataTmpService) *dataTmpController{
-	return &dataTmpController{service}
+func NewDataTmpController(dataTmpService service.DataTmpService) *dataTmpController{
+	return &dataTmpController{dataTmpService}
 }
 
 func (c *dataTmpController) GetAllDataTmp(w http.ResponseWriter, r *http.Request){
@@ -140,6 +142,73 @@ func (c *dataTmpController) GetRekapDeliveryWitel(w http.ResponseWriter, r *http
 	helper.WriteToResponseBody(w, webResponse)
 }
 
+func (c *dataTmpController) ExportDataTmp(w http.ResponseWriter, r *http.Request){
+	fileBytes, fileName, err := c.dataTmpService.GetExportDataTmp()
+	helper.PanicIfError(err)
+
+	helper.DownloadHandler(w, r, fileName, fileBytes)
+}
+
+func (c *dataTmpController) ExportMinimumStockDatabase(w http.ResponseWriter, r *http.Request){
+	fileBytes, fileName, err := c.dataTmpService.GetExportMinimumStockDatabase()
+	helper.PanicIfError(err)
+
+	helper.DownloadHandler(w, r, fileName, fileBytes)
+}
+
+func (c *dataTmpController) DownloadTemplateMinimumStock(w http.ResponseWriter, r *http.Request){
+	fileBytes, fileName, err := c.dataTmpService.DownloadTemplateMinimumStock()
+	helper.PanicIfError(err)
+
+	helper.DownloadHandler(w, r, fileName, fileBytes)
+}
+
+func (c *dataTmpController) DownloadTemplateDataTmp(w http.ResponseWriter, r *http.Request){
+	fileBytes, fileName, err := c.dataTmpService.DownloadTemplateDataTmp()
+	helper.PanicIfError(err)
+
+	helper.DownloadHandler(w, r, fileName, fileBytes)
+}
+
+func (c *dataTmpController) UploadDataTmp(w http.ResponseWriter, r *http.Request){
+	// Retrieve the file from form data
+	file, _, err := r.FormFile("file")
+	helper.PanicIfError(err)
+	defer file.Close()
+
+	// Create a destination file
+	destPath := "template/uploaded_data_tmp.xlsx"
+	destFile, err := os.Create(destPath)
+	helper.PanicIfError(err)
+
+	// Copy the uploaded file data to the destination file
+	_, err = io.Copy(destFile, file)
+	helper.PanicIfError(err)
+
+	c.dataTmpService.UploadDataTmp()
+
+	// Attempt to delete the file
+	defer func() {
+		destFile.Close()
+		
+		// Path to the file you want to delete
+		filePath := "template/uploaded_data_tmp.xlsx"
+
+		// Attempt to delete the file
+		err = os.Remove(filePath)
+		helper.PanicIfError(err)
+	}()
+
+	webResponse := web.WebResponse{
+		Code : 200,
+		Status : "OK",
+		Data : map[string]string{
+            "message": "Upload file sukses!",
+        },
+	}
+
+	defer helper.WriteToResponseBody(w, webResponse)
+}
 // testing insert
 // {
 // 	"region": "region testing",

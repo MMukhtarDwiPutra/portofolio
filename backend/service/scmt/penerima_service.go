@@ -20,8 +20,8 @@ type PenerimaService interface{
 	AddPenerima(penerima domain.PenerimaPost)
 	DeletePenerimaById(id int)
 	DownloadSerialNumber(id int) ([]byte, string, error)
-	UploadPenerimaan()
-	DeleteAllPenerima()
+	UploadPenerimaan(jenisUpload string)
+	DeleteAllPenerimaONT()
 	EditIDOGDById(id string, data domain.PenerimaPost)
 	GetFitur(namaFitur string) string
 	EditOnDeliveryById(penerima domain.PenerimaPost, id string) string
@@ -337,10 +337,14 @@ func (s *penerimaService) GetFitur(namaFitur string) string{
 	return s.fiturRepository.GetFitur(namaFitur);
 }
 
-func (s *penerimaService) UploadPenerimaan(){
+func (s *penerimaService) UploadPenerimaan(jenisUpload string){
 	templatePath := "template/uploaded_penerima.xlsx"
     spreadsheetImport, err := excelize.OpenFile(templatePath)
     helper.PanicIfError(err)
+
+    if(jenisUpload == "replace"){
+    	s.penerimaRepository.DeleteAllPenerima();
+    }
 
     // Get the active sheet index
     activeSheetIndexUploaded := spreadsheetImport.GetActiveSheetIndex()
@@ -399,8 +403,8 @@ func (s *penerimaService) UploadPenerimaan(){
     }()
 }
 
-func (s *penerimaService) DeleteAllPenerima(){
-	s.penerimaRepository.DeleteAllPenerima()
+func (s *penerimaService) DeleteAllPenerimaONT(){
+	s.penerimaRepository.DeleteAllPenerimaONT()
 }
 
 func (s *penerimaService) EditIDOGDById(id string, penerima domain.PenerimaPost){

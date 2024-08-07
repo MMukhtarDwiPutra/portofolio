@@ -13,6 +13,9 @@ type GudangRepository interface{
 	GetAllSOFromWitel(witel string) []string
 	GetSOFromSO(witel string) []string
 	GetAllWarehouse() []domain.LokasiWarehouseResponse
+	GetAllData() []domain.Gudang
+	UploadGudangBulk(gudang []domain.Gudang)
+	DeleteAllDataGudang()
 }
 
 type gudangRepository struct{
@@ -116,4 +119,36 @@ func (r *gudangRepository) GetAllWarehouse() []domain.LokasiWarehouseResponse{
 	}
 
 	return warehouses
+}
+
+func (r *gudangRepository) GetAllData() []domain.Gudang{
+	var dataGudangs []domain.Gudang
+
+	rows, err := r.db.Query("SELECT * FROM GUDANG")
+	helper.PanicIfError(err)
+
+	for rows.Next(){
+		var dataGudang domain.Gudang
+		rows.Scan(&dataGudang.ID, &dataGudang.Regional, &dataGudang.Witel, &dataGudang.LokasiWH, &dataGudang.Lokasi, &dataGudang.Wilayah, &dataGudang.MinimumQty, &dataGudang.RetailZTE, &dataGudang.RetailHW, &dataGudang.RetailFH,&dataGudang.RetailALU, &dataGudang.PremiumZTE, &dataGudang.PremiumFH, &dataGudang.PremiumHW, &dataGudang.STBZTE, &dataGudang.APCisco, &dataGudang.APHuawei)
+		dataGudangs = append(dataGudangs, dataGudang)
+	}
+
+	return dataGudangs
+}
+
+func (r *gudangRepository) UploadGudangBulk(gudang []domain.Gudang){
+	query := "INSERT INTO `gudang`(`regional`, `witel`, `lokasi_wh`, `lokasi`, `wilayah`, `minimum_qty`, `retail_zte`, `retail_hw`, `retail_fh`, `retail_alu`, `premium_zte`, `premium_fh`, `premium_hw`, `stb_zte`, `ap_cisco`, `ap_huawei`) VALUE "
+
+	for i := range gudang{
+		query += "( '"+gudang[i].Regional+"','"+gudang[i].Witel+"','"+ gudang[i].LokasiWH+"','"+ gudang[i].Lokasi+"','"+ gudang[i].Wilayah+"','"+ gudang[i].MinimumQty+"','"+ gudang[i].RetailZTE+"','"+ gudang[i].RetailHW+"','"+ gudang[i].RetailFH+"','"+ gudang[i].RetailALU+"','"+ gudang[i].PremiumZTE+"','"+ gudang[i].PremiumFH+"','"+ gudang[i].PremiumHW+"','"+ gudang[i].STBZTE+"','"+ gudang[i].APCisco+"','"+ gudang[i].APHuawei+"'),"
+	}
+
+	query = query[:len(query)-1]
+	_, err := r.db.Query(query)
+	helper.PanicIfError(err)
+}
+
+func (r *gudangRepository) DeleteAllDataGudang(){
+	_, err := r.db.Query("DELETE FROM gudang")
+	helper.PanicIfError(err)
 }

@@ -8,71 +8,6 @@ import { BrowserRouter as Router, Route, Routes, Link, useNavigate } from "react
 import { useParams } from 'react-router-dom';
 
 const HomeSCMT = () => {
-    // const { lokasi_wh } = useParams();
-
-    // const [data, setData] = useState([]);
-    // const [loading, setLoading] = useState(true);
-    // const [error, setError] = useState(null);
-
-    // const fetchData = async () => {
-    //     // Simulate an API call
-    //     try {
-    //         // console.log("HIT Get Fetch Data Penerima")
-    //         let response
-    //         if(lokasi_wh === undefined){
-    //             const response = await fetch(`http://localhost:8080/api/get_rekap_delivery_treg`); // Replace with your API endpoint
-    //             const result = await response.json();
-    //             setData(result.data)
-    //         }else{
-    //             if(lokasi_wh.includes("TREG")){
-    //                 const response = await fetch(`http://localhost:8080/api/get_rekap_delivery_treg/witel/${lokasi_wh}`); // Replace with your API endpoint
-    //                 const result = await response.json();
-    //                 setData(result.data)
-    //             }else if(lokasi_wh.includes("WITEL")){
-    //                 const response = await fetch(`http://localhost:8080/api/get_rekap_delivery_treg/witel/${lokasi_wh}`); // Replace with your API endpoint
-    //                 const result = await response.json();
-    //                 setData(result.data)
-    //             }
-    //         }
-    //         if(response){
-    //             setPrevLokasiWH(lokasi_wh)
-    //             console.log(lokasi_wh)
-    //         }
-    //     }catch (error){
-    //         setError(error.message)
-    //     }finally {
-    //         setLoading(false);
-    //     }
-    // };
-
-    // useEffect(() => {
-    //     fetchData()
-    // }, [])
-
-    // useEffect(() => {
-    //     setData(data)
-    // },[data])
-
-    // const [prevLokasiWH, setPrevLokasiWH] = useState([]);
-
-    // const navigate = useNavigate();
-    //     const handleLinkClick = (event, locationWh) => {
-    //         event.preventDefault(); // Prevent the default link behavior
-    //         // navigate(`/scmt/rekap_delivery/witel/${locationWh}`, { replace: true });
-    //         navigate(`/scmt/rekap_delivery/witel/${locationWh}`);
-    //         fetchData()
-    //         // window.location.reload();
-    //         console.log(locationWh)
-    //   };
-
-    // const handleLinkBackClick = (event) => {
-    //     // event.preventDefault(); // Prevent the default link behavior
-    //     // navigate(`/scmt/rekap_delivery/${prevLokasiWH}`, { replace: true });
-    //     fetchData();
-    //     navigate(-1); // Go back to the previous page
-    //     // window.location.reload();
-    //   };
-
     const { lokasi_wh } = useParams();
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -85,9 +20,15 @@ const HomeSCMT = () => {
         try {
             let response;
             if (!lokasi_wh) {
-                response = await fetch(`http://localhost:8080/api/get_rekap_delivery_treg`);
+                response = await fetch(`http://localhost:8080/api/get_rekap_delivery_treg`, {
+                    headers: {'Content-Type': 'application/json'},
+                    credentials: 'include',
+                });
             } else {
-                response = await fetch(`http://localhost:8080/api/get_rekap_delivery_treg/witel/${lokasi_wh}`);
+                response = await fetch(`http://localhost:8080/api/get_rekap_delivery_treg/witel/${lokasi_wh}`,{ 
+                    headers: {'Content-Type': 'application/json'},
+                    credentials: 'include',
+                });
             }
 
             if (response.ok) {
@@ -119,7 +60,6 @@ const HomeSCMT = () => {
     }, [lokasi_wh]);
 
     useEffect(() => {
-        console.log(history)
     }, [history])
 
     const handleLinkClick = (event, locationWh) => {
@@ -231,7 +171,7 @@ const HomeSCMT = () => {
                                                     </tr>
                                                  </thead>
                                                 <tbody>
-                                                {data && 
+                                                {Array.isArray(data) && 
                                                     data.map((item, index) => {
                                                         grandTotalRetailStock += item.total_retail_stock;
                                                         grandTotalPremiumStock += item.total_premium_stock;

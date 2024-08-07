@@ -5,6 +5,7 @@ type Gudang struct {
 	Regional  string `bson:"regional" json:"regional"`
 	Witel string `bson:"witel" json:"witel"`
 	LokasiWH string `bson:"lokasi_wh" json:"lokasi_wh"`
+	Lokasi string `bson:"lokasi" json:"lokasi"`
 	Wilayah string `bson:"wilayah" json:"wilayah"`
 	MinimumQty string `bson:"minimum_qty" json:"minimum_qty"`
 	RetailZTE string `bson:"retail_zte" json:"retail_zte"`

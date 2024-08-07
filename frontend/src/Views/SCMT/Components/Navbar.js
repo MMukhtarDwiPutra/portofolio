@@ -1,10 +1,58 @@
-import React from "react"
-
 import Image from 'react-bootstrap/Image';
 import Logo from '../../../Assets/img/minitok.jpeg'
 import Bell from '../../../Assets/img/bell.png'
+import React, {Component, useEffect, StrictMode, useState  } from 'react'
+import {useNavigate } from "react-router-dom";
 
 export default function Navbar(){
+	const [login, setLogin] = useState(false)
+	const fetchDataUser = async () =>{
+        try{
+            let response;
+            response = await fetch(`http://localhost:8080/api/user`, { 
+                    headers: {'Content-Type': 'application/json'},
+                    credentials: 'include',
+                })
+
+            const result = await response.json();
+            if(result.data.username){
+            	setLogin(true)
+            }
+        }catch(error){
+        }
+    }
+    useEffect(() => {
+	    fetchDataUser();
+  	}, []);
+
+	const [redirect, setRedirect] = useState(false)
+  	const handleLogout = async (e) => {
+	    e.preventDefault();
+
+	    try {
+	      const response = await fetch('http://localhost:8080/scmt/logout', {
+	        method: 'GET',
+	        headers: {
+	          'Content-Type': 'application/json',
+	        },
+	        credentials: "include",
+	      });
+
+	      setRedirect(true)
+	      console.log(redirect)
+	    } catch (error) {
+	      console.error('Error:', error);
+	    }
+	};
+
+	const navigate = useNavigate();
+
+    useEffect(() => {
+        if (redirect) {
+            navigate('/scmt/login');
+        }
+    }, [redirect, navigate]);
+
 	return(
 		<>
 			<div className="container-fluid" style={{width: "100%"}}>
@@ -46,8 +94,13 @@ export default function Navbar(){
 
 			        <div className="col-md-2" style={{paddingTop: "30px", paddingBottom: "5px"}}>
 			            <div className="d-flex justify-content-end">
+			            {login ? (
 			                <a className="active btn btn-danger align-middle my-auto" style={{color: "white", height: "40px"}}
-			                    href="">Logout</a>
+			                    onClick={handleLogout}>Logout</a>
+			                ) : (
+			                <a className="btn btn-primary" href="/scmt/login">Login</a>
+			                )
+			            }
 			            </div>
 			        </div>
 			    </div>

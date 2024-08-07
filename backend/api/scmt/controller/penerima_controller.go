@@ -51,6 +51,13 @@ func (c *penerimaController) GetPengirimanONT(w http.ResponseWriter, r *http.Req
 	helper.WriteToResponseBody(w, webResponse)
 }
 
+func (c *penerimaController) ExportAllPenerimaONT(w http.ResponseWriter, r *http.Request){
+	fileBytes, fileName, err := c.penerimaService.ExportPenerima("ONT")
+	helper.PanicIfError(err)
+
+	helper.DownloadHandler(w, r, fileName, fileBytes)
+}
+
 func (c *penerimaController) ExportAllPenerima(w http.ResponseWriter, r *http.Request){
 	fileBytes, fileName, err := c.penerimaService.ExportPenerima("All")
 	helper.PanicIfError(err)
@@ -158,6 +165,9 @@ func (c *penerimaController) UploadPenerimaan(w http.ResponseWriter, r *http.Req
 	helper.PanicIfError(err)
 	defer file.Close()
 
+	params := mux.Vars(r)
+	jenisUpload := params["jenis_upload"]
+
 	// Create a destination file
 	destPath := "template/uploaded_penerima.xlsx"
 	destFile, err := os.Create(destPath)
@@ -167,7 +177,7 @@ func (c *penerimaController) UploadPenerimaan(w http.ResponseWriter, r *http.Req
 	_, err = io.Copy(destFile, file)
 	helper.PanicIfError(err)
 
-	c.penerimaService.UploadPenerimaan()
+	c.penerimaService.UploadPenerimaan(jenisUpload)
 
 	// Attempt to delete the file
 	defer func() {
@@ -192,8 +202,8 @@ func (c *penerimaController) UploadPenerimaan(w http.ResponseWriter, r *http.Req
 	defer helper.WriteToResponseBody(w, webResponse)
 }
 
-func (c *penerimaController) DeleteAllPenerima(w http.ResponseWriter, r *http.Request){
-	c.penerimaService.DeleteAllPenerima()
+func (c *penerimaController) DeleteAllPenerimaONT(w http.ResponseWriter, r *http.Request){
+	c.penerimaService.DeleteAllPenerimaONT()
 
     webResponse := web.WebResponse{
 		Code : 200,

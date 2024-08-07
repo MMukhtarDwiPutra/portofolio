@@ -42,6 +42,26 @@ export default function Sidebar(){
     setCollapseActive(newCollapseActive);
   };
 
+  const [login, setLogin] = useState(false)
+	const fetchDataUser = async () =>{
+        try{
+            let response;
+            response = await fetch(`http://localhost:8080/api/user`, { 
+                    headers: {'Content-Type': 'application/json'},
+                    credentials: 'include',
+                })
+
+            const result = await response.json();
+            if(result.data.username){
+            	setLogin(true)
+            }
+        }catch(error){
+        }
+    }
+    useEffect(() => {
+	    fetchDataUser();
+  	}, []);
+
 	return(
 		<>
 			<nav id="sidebar" className={sidebarActive ? 'active' : ''}>
@@ -68,54 +88,28 @@ export default function Sidebar(){
 				        </li>
 
 
-				        <li key="1" className={collapseActive[1] ? 'active' : ''}>
-				            <a href="#" data-toggle="collapse" onClick={() => toggleCollapse(1)} aria-expanded="false" className="dropdown-toggle">Minimum Stock STB</a>
-				            <ul className={collapseActive[1] ? 'collapse list-unstyled components' : 'list-unstyled components'} id="SubMenu1">
-				                <li>
-				                    <a className="nav-link active" href="{{url('/stb/rekap_delivery_stb')}}">Rekap Minimum Stock STB</a>
-				                </li>
-				                <li>
-				                    <a className="nav-link active" href="{{url('/pengiriman_stb')}}">Report Delivery STB</a>
-				                </li>
-				            </ul>
-				        </li>
-
-				        <li key="2" className="active">
-				            <a href="#" data-toggle="collapse" aria-expanded="false" onClick={() => toggleCollapse(2)} className="dropdown-toggle">Minimum Stock AP</a>
-				            <ul className={collapseActive[2] ? 'collapse list-unstyled components' : 'list-unstyled components'} id="SubMenu2">
-				                <li>
-				                    <a className="nav-link active" href="{{url('/rekap_delivery_ap')}}">Rekap Minimum Stock AP</a>
-				                </li>
-				                <li>
-				                    <a className="nav-link active" href="{{url('/pengiriman_ap')}}">Report Delivery AP</a>
-				                </li>
-				            </ul>
-				        </li>
-
+				        
+				        {login && (
 				        <li key="3" className="active">
 				            <a href="#" data-toggle="collapse" onClick={() => toggleCollapse(3)} aria-expanded="false" className="dropdown-toggle">Input Data</a>
 				            <ul className={collapseActive[3] ? 'collapse list-unstyled components' : 'list-unstyled components'} id="SubMenu3">
 				                <li>
-				                    <a className="nav-link active" href="{{url('/input_data_stock')}}">Upload File Stock</a>
+				                 <Link className="nav-link active" to="/scmt/upload_file_data_stock">Upload File Stock</Link>
 				                </li>
 				                <li>
-				                    <a className="nav-link active" href="{{url('/input_data_pengiriman')}}">Update File Delivery</a>
+				                	<Link className="nav-link active" to="/scmt/upload_file_pengiriman">Update File Delivery</Link>
 				                </li>
 				                <li>
-				                    <a className="nav-link active" href="{{url('/input_data_database')}}">Upload File Minimum Stock</a>
-				                </li>
-				                <li>
-				                    <a className="nav-link active" href="{{url('/input_sn_mac_vendor')}}">Upload File SN Vendor</a>
-				                </li>
+				                	<Link className="nav-link active" to="/scmt/upload_file_minimum_stock">Upload File Minimum Stock</Link>
+				                </li> 
 				            </ul>
 				        </li>
-
-				        <li>
-				            <a className="nav-link active" style={{color:"#fff"}} href="{{url('/request_outbond')}}">Request Outbond</a>
-				        </li>
+				        )}
+				        {login && (
 				        <li className="justify-content: end;">
 				            <a className="nav-link active" style={{color:"#fff"}} href="{{url('/edit_profile')}}">Edit Profile</a>
 				        </li>
+				        )}
 				    </ul>     
 				</div>
 			</nav>

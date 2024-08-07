@@ -12,6 +12,7 @@ import(
 	"time"
 	"github.com/golang-jwt/jwt/v4"
 	"fmt"
+	"strconv"
 )
 
 type UserController interface{
@@ -19,11 +20,11 @@ type UserController interface{
 }
 
 type userController struct{
-	service service.UserService
+	userService service.UserService
 }
 
-func NewUserController(service service.UserService) *userController{
-	return &userController{service}
+func NewUserController(userService service.UserService) *userController{
+	return &userController{userService}
 }
 
 func (c *userController) Login(w http.ResponseWriter, r *http.Request){
@@ -33,19 +34,26 @@ func (c *userController) Login(w http.ResponseWriter, r *http.Request){
 	helper.PanicIfError(err)
 	defer r.Body.Close()
 
-	user := c.service.GetUser(userInput.Username)
-	fmt.Println(user)
+	user := c.userService.GetUserByUsername(userInput.Username)
 	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userInput.Password)); err != nil{
-		fmt.Println(user.Password)
-		fmt.Println(userInput.Password)
+		webResponse := web.WebResponse{
+			Code : 200,
+			Status : "OK",
+			Data : map[string]string{
+	            "message": "Password Salah",
+	        },
+		}
+
+		helper.WriteToResponseBody(w, webResponse)
+		return
 	}
 	helper.PanicIfError(err)
 
-	expTime := time.Now().Add(time.Minute * 1)
+	expTime := time.Now().Add(time.Minute * 60)
 	claims := &config.JWTClaim{
 		Username: user.Username,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer: "go-jwt-mux",
+			Issuer: strconv.Itoa(int(user.ID)),
 			ExpiresAt: jwt.NewNumericDate(expTime),
 		},
 	}
@@ -82,7 +90,7 @@ func (c *userController) Register(w http.ResponseWriter, r *http.Request){
 	hashPassword, _ := bcrypt.GenerateFromPassword([]byte(userInput.Password), bcrypt.DefaultCost)
 	userInput.Password = string(hashPassword)
 
-	c.service.Register(userInput)
+	c.userService.Register(userInput)
 	webResponse := web.WebResponse{
 		Code : 200,
 		Status : "OK",
@@ -107,6 +115,55 @@ func (c *userController) Logout(w http.ResponseWriter, r *http.Request){
 		Data : map[string]string{
             "message": "Logout berhasil!",
         },
+	}
+
+	helper.WriteToResponseBody(w, webResponse)
+}
+
+func (c *userController) GetUser(w http.ResponseWriter, r *http.Request){
+	cookie, err := r.Cookie("token")
+
+	claims := &config.JWTClaim{}
+	token, err := jwt.ParseWithClaims(cookie.Value, claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+            return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+        }
+		return []byte(config.JWT_KEY), nil
+	})
+
+	if err != nil{
+		webResponse := web.WebResponse{
+			Code : 200,
+			Status : "OK",
+			Data : map[string]string{
+	            "message": "Unauthenticated",
+	        },
+		}
+
+		helper.WriteToResponseBody(w, webResponse)
+	}
+
+	if !token.Valid{
+		webResponse := web.WebResponse{
+			Code : 200,
+			Status : "OK",
+			Data : map[string]string{
+	            "message": "Token invalid",
+	        },
+		}
+
+		helper.WriteToResponseBody(w, webResponse)
+	}
+
+	id, err := strconv.Atoi(claims.Issuer)
+	helper.PanicIfError(err)
+
+	users := c.userService.GetUserById(id)
+	
+	webResponse := web.WebResponse{
+		Code : 200,
+		Status : "OK",
+		Data : users,
 	}
 
 	helper.WriteToResponseBody(w, webResponse)

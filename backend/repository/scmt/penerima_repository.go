@@ -30,6 +30,7 @@ type PenerimaRepository interface{
 	EditTanggalPenerimaanById(id string, data domain.PenerimaPost)
 	EditTanggalOnly(id string, data domain.PenerimaPost)
 	AddPenerimaBulk(penerima []domain.PenerimaPost)
+	DeleteAllPenerimaONT()
 	DeleteAllPenerima()
 }
 
@@ -356,7 +357,12 @@ func (r *penerimaRepository) EditTanggalOnly(id string, data domain.PenerimaPost
 	helper.PanicIfError(err)
 }
 
-func (r *penerimaRepository) DeleteAllPenerima(){
+func (r *penerimaRepository) DeleteAllPenerimaONT(){
 	_, err := r.db.Query("DELETE FROM penerimaan WHERE (`type` LIKE '%ONT_ZTE_F670L%') OR (`type` like '%G240WL%' OR `type` like '%2425G%') OR (`type` LIKE '%HG6145D2%' or `type` LIKE '%HG6145F%') OR (`type` LIKE '%HG8145%') OR (`type` like '%HG8145V5%') OR (`type` LIKE '%ZTE_F670 V2.0%' or `type` = 'ONT_ZTE_F670 V2.0' or `type` = 'ONT_ZTE_F670') OR (`type` LIKE '%HG6245N%') OR (`type` like '%HG8245W5-6T%' or `type` = 'ONT_HW_HG8245W5-6T')")
+	helper.PanicIfError(err)
+}
+
+func (r *penerimaRepository) DeleteAllPenerima(){
+	_, err := r.db.Query("DELETE FROM penerimaan");
 	helper.PanicIfError(err)
 }

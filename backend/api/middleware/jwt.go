@@ -17,7 +17,7 @@ func JWTMiddleware(next http.Handler) http.Handler{
 					Code : 200,
 					Status : "OK",
 					Data : map[string]string{
-			            "message": "Unauthorized",
+			            "message": "Unauthorized No Cookie",
 			        },
 				}
 
@@ -40,7 +40,7 @@ func JWTMiddleware(next http.Handler) http.Handler{
 					Code : 200,
 					Status : "OK",
 					Data : map[string]string{
-			            "message": "Unauthorized",
+			            "message": "Unauthorized, error validation signature",
 			        },
 				}
 
@@ -76,7 +76,7 @@ func JWTMiddleware(next http.Handler) http.Handler{
 					Code : 200,
 					Status : "OK",
 					Data : map[string]string{
-			            "message": "Unauthorized, Token Expired",
+			            "message": "Unauthorized, Token invalid",
 			        },
 				}
 

@@ -66,3 +66,46 @@
 	                            </div>
 	                            )}
 	                        </div>
+
+
+
+
+
+
+
+
+
+
+
+
+<li key="1" className={collapseActive[1] ? 'active' : ''}>
+    <a href="#" data-toggle="collapse" onClick={() => toggleCollapse(1)} aria-expanded="false" className="dropdown-toggle">Minimum Stock STB</a>
+    <ul className={collapseActive[1] ? 'collapse list-unstyled components' : 'list-unstyled components'} id="SubMenu1">
+        <li>
+            <a className="nav-link active" href="{{url('/stb/rekap_delivery_stb')}}">Rekap Minimum Stock STB</a>
+        </li>
+        <li>
+            <a className="nav-link active" href="{{url('/pengiriman_stb')}}">Report Delivery STB</a>
+        </li>
+    </ul>
+</li>
+
+<li key="2" className="active">
+    <a href="#" data-toggle="collapse" aria-expanded="false" onClick={() => toggleCollapse(2)} className="dropdown-toggle">Minimum Stock AP</a>
+    <ul className={collapseActive[2] ? 'collapse list-unstyled components' : 'list-unstyled components'} id="SubMenu2">
+        <li>
+            <a className="nav-link active" href="{{url('/rekap_delivery_ap')}}">Rekap Minimum Stock AP</a>
+        </li>
+        <li>
+            <a className="nav-link active" href="{{url('/pengiriman_ap')}}">Report Delivery AP</a>
+        </li>
+    </ul>
+</li>
+
+<li>
+	<a className="nav-link active" href="{{url('/input_sn_mac_vendor')}}">Upload File SN Vendor</a>
+</li>
+
+<li>
+    <a className="nav-link active" style={{color:"#fff"}} href="{{url('/request_outbond')}}">Request Outbond</a>
+</li>
