@@ -17,7 +17,6 @@ const EditModal = ({ showModal, handleCloseModal, data, setCurrentItem, handleSa
 
   const handleFileChange = (e) => {
     setDataForm({ ...dataForm, sn_mac_barcode_file: e.target.files[0] });
-    console.log(dataForm)
   };
 
   const handleChange = (e) => {

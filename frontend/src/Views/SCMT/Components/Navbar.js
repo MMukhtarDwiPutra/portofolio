@@ -39,7 +39,6 @@ export default function Navbar(){
 	      });
 
 	      setRedirect(true)
-	      console.log(redirect)
 	    } catch (error) {
 	      console.error('Error:', error);
 	    }
@@ -49,7 +48,8 @@ export default function Navbar(){
 
     useEffect(() => {
         if (redirect) {
-            navigate('/scmt/login');
+            navigate('/scmt/rekap_delivery');
+            window.location.reload();
         }
     }, [redirect, navigate]);
 

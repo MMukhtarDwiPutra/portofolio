@@ -107,7 +107,7 @@ export default function Sidebar(){
 				        )}
 				        {login && (
 				        <li className="justify-content: end;">
-				            <a className="nav-link active" style={{color:"#fff"}} href="{{url('/edit_profile')}}">Edit Profile</a>
+				            <a className="nav-link active" style={{color:"#fff"}} href="/scmt/edit_profile">Edit Profile</a>
 				        </li>
 				        )}
 				    </ul>     

@@ -5,6 +5,7 @@ import (
 	"log"
 	"portofolio.com/domain/scmt"
 	"portofolio.com/api/helper"
+	// "fmt"
 )
 
 type DataTmpRepository interface{
@@ -55,17 +56,25 @@ func (r *dataTmpRepository) InsertData(data domain.DataTmp){
 }
 
 func (r *dataTmpRepository) GetTableLastUpdate() (string, string){
-	var waktu_update string
-	var waktu_dibuat string
+	var waktuUpdate, waktuDibuat sql.NullString
 
 	rows, err := r.db.Query("SELECT UPDATE_TIME as waktu_update, CREATE_TIME as waktu_dibuat FROM information_schema.tables WHERE TABLE_SCHEMA = 'scmt' AND TABLE_NAME = 'data_tmp'")
 	helper.PanicIfError(err)
 
-	for rows.Next(){
-		rows.Scan(&waktu_update, &waktu_dibuat)
-	}
+	if rows.Next() {
+        err := rows.Scan(&waktuUpdate, &waktuDibuat)
+        if err != nil {
+            return "", ""
+        }
+    } else {
+        return "", ""
+    }
 
-	return waktu_update, waktu_dibuat
+    // Ubah sql.NullString ke string biasa
+    waktuUpdateStr := waktuUpdate.String
+    waktuDibuatStr := waktuDibuat.String
+
+	return waktuUpdateStr, waktuDibuatStr
 }
 
 func (r *dataTmpRepository) DeleteAllData(){

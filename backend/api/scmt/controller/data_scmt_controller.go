@@ -117,12 +117,12 @@ func (c *dataTmpController) CountAPPerWitel(w http.ResponseWriter, r *http.Reque
 
 
 func (c *dataTmpController) GetRekapDeliveryTREG(w http.ResponseWriter, r *http.Request){
-	countResponse := c.dataTmpService.RekapDeliveryTREG();
+	data := c.dataTmpService.RekapDeliveryTREG();
 
 	webResponse := web.WebResponse{
 		Code : 200,
 		Status : "OK",
-		Data : countResponse["treg"],
+		Data : data,
 	}
 
 	helper.WriteToResponseBody(w, webResponse)
@@ -131,12 +131,12 @@ func (c *dataTmpController) GetRekapDeliveryTREG(w http.ResponseWriter, r *http.
 func (c *dataTmpController) GetRekapDeliveryWitel(w http.ResponseWriter, r *http.Request){
 	params := mux.Vars(r)
 	lokasiWH, _ := params["lokasi_wh"]
-	countResponse := c.dataTmpService.RekapDeliveryWitel(lokasiWH);
+	data := c.dataTmpService.RekapDeliveryWitel(lokasiWH);
 
 	webResponse := web.WebResponse{
 		Code : 200,
 		Status : "OK",
-		Data : countResponse["response"],
+		Data : data,
 	}
 
 	helper.WriteToResponseBody(w, webResponse)
@@ -208,6 +208,17 @@ func (c *dataTmpController) UploadDataTmp(w http.ResponseWriter, r *http.Request
 	}
 
 	defer helper.WriteToResponseBody(w, webResponse)
+}
+
+func (c *dataTmpController) ExportDataTmpRekapPage(w http.ResponseWriter, r *http.Request){
+	params := mux.Vars(r)
+	jenisWarna := params["jenis_warna"]
+	jenisExport := params["jenis_export"]
+
+	fileBytes, fileName, err := c.dataTmpService.ExportDataTmp(jenisWarna, jenisExport)
+	helper.PanicIfError(err)
+
+	helper.DownloadHandler(w, r, fileName, fileBytes)
 }
 // testing insert
 // {

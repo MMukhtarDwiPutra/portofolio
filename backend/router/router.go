@@ -49,6 +49,7 @@ func AddRouter(muxRouter *mux.Router) *mux.Router{
 	api.HandleFunc("/export_minimum_stock_database", dataTmpController.ExportMinimumStockDatabase).Methods("GET")
 	api.HandleFunc("/download_template_minimum_stock", dataTmpController.DownloadTemplateMinimumStock).Methods("GET")
 	api.HandleFunc("/download_template_data_tmp", dataTmpController.DownloadTemplateDataTmp).Methods("GET")
+	api.HandleFunc("/export_data_tmp_rekap_page/{jenis_warna}/{jenis_export}", dataTmpController.ExportDataTmpRekapPage).Methods("GET")
 
 	muxRouter.HandleFunc("/api/get_pengiriman_ont", penerimaController.GetPengirimanONT).Methods("GET")
 	api.HandleFunc("/export_all_penerima", penerimaController.ExportAllPenerima).Methods("GET")
@@ -67,6 +68,8 @@ func AddRouter(muxRouter *mux.Router) *mux.Router{
 	muxRouter.HandleFunc("/scmt/register_user", userController.Register).Methods("POST")
 	muxRouter.HandleFunc("/scmt/login", userController.Login).Methods("POST")
 	muxRouter.HandleFunc("/scmt/logout", userController.Logout).Methods("GET")
+	api.HandleFunc("/scmt/change_password/{id}", userController.ChangePassword).Methods("PUT")
+	api.HandleFunc("/scmt/change_data_user/{id}", userController.ChangeDataUser).Methods("PUT")
 
 	api.Use(middleware.JWTMiddleware)
 

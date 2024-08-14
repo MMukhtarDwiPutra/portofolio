@@ -13,6 +13,7 @@ import(
 	"github.com/golang-jwt/jwt/v4"
 	"fmt"
 	"strconv"
+	"github.com/gorilla/mux"
 )
 
 type UserController interface{
@@ -158,12 +159,69 @@ func (c *userController) GetUser(w http.ResponseWriter, r *http.Request){
 	id, err := strconv.Atoi(claims.Issuer)
 	helper.PanicIfError(err)
 
-	users := c.userService.GetUserById(id)
+	users := c.userService.GetDataUserById(id)
 	
 	webResponse := web.WebResponse{
 		Code : 200,
 		Status : "OK",
 		Data : users,
+	}
+
+	helper.WriteToResponseBody(w, webResponse)
+}
+
+func (c *userController) ChangeDataUser(w http.ResponseWriter, r *http.Request){
+	params := mux.Vars(r)
+	id, err := strconv.Atoi(params["id"])
+	helper.PanicIfError(err)
+
+	fullname := r.FormValue("fullname")
+	fmt.Println(fullname)
+
+	c.userService.ChangeDataUser(fullname, id);
+
+	webResponse := web.WebResponse{
+		Code : 200,
+		Status : "OK",
+		Data : map[string]string{
+			"message" : "Data berhasil diubah!",
+		},
+	}
+
+	helper.WriteToResponseBody(w, webResponse)
+}
+
+func (c *userController) ChangePassword(w http.ResponseWriter, r *http.Request){
+	params := mux.Vars(r)
+	id, err := strconv.Atoi(params["id"])
+	helper.PanicIfError(err)
+
+	passwordBaru := r.FormValue("password_baru");
+	passwordLama:= r.FormValue("password_lama");
+
+	user := c.userService.GetUserById(id)
+	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(passwordLama)); err != nil{
+		webResponse := web.WebResponse{
+			Code : 200,
+			Status : "OK",
+			Data : map[string]string{
+	            "message": "Password lama yang dimasukan salah!",
+	        },
+		}
+
+		helper.WriteToResponseBody(w, webResponse)
+		return
+	}
+
+	passwordHashBaru, _ := bcrypt.GenerateFromPassword([]byte(passwordBaru), bcrypt.DefaultCost)
+	c.userService.ChangePassword(string(passwordHashBaru), id);
+
+	webResponse := web.WebResponse{
+		Code : 200,
+		Status : "OK",
+		Data : map[string]string{
+			"message" : "Password berhasil diubah!",
+		},
 	}
 
 	helper.WriteToResponseBody(w, webResponse)

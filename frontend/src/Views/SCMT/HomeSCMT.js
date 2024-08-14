@@ -13,6 +13,26 @@ const HomeSCMT = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [history, setHistory] = useState([]);
+    const [login, setLogin] = useState(false)
+    const [waktuUpdate, setWaktuUpdate] = useState('')
+    const fetchDataUser = async () =>{
+        try{
+            let response;
+            response = await fetch(`http://localhost:8080/api/user`, { 
+                    headers: {'Content-Type': 'application/json'},
+                    credentials: 'include',
+                })
+
+            const result = await response.json();
+            if(result.data.username){
+                setLogin(true)
+            }
+        }catch(error){
+        }
+    }
+    useEffect(() => {
+        fetchDataUser();
+    }, []);
 
     const navigate = useNavigate();
 
@@ -33,7 +53,12 @@ const HomeSCMT = () => {
 
             if (response.ok) {
                 const result = await response.json();
-                setData(result.data);
+                if(!lokasi_wh){
+                    setData(result.data.treg);
+                }else{
+                    setData(result.data.response);
+                }
+                setWaktuUpdate(result.data.last_update)
             }
         } catch (error) {
             setError(error.message);
@@ -82,6 +107,61 @@ const HomeSCMT = () => {
         }
     };
 
+    const [exportData, setExportData] = useState('all')
+    const handleExportChange = async (e) =>{
+        setExportData(e.target.value)
+    }
+
+    const [exportDataAll, setExportDataAll] = useState('all')
+    const handleExportAllChange = async (e) =>{
+        setExportDataAll(e.target.value)
+    }
+
+    const handleOnClickExport = async () => {
+        if (!lokasi_wh) {
+            const link = document.createElement('a');
+            link.href = `http://localhost:8080/api/export_data_tmp_rekap_page/${exportData}/treg_only`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } else {
+            const link = document.createElement('a');
+            link.href = `http://localhost:8080/api/export_data_tmp_rekap_page/${exportData}/${lokasi_wh}`;
+            console.log(`http://localhost:8080/api/export_data_tmp_rekap_page/${exportData}/${lokasi_wh}`)
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        }
+    }
+
+    const handleOnClickExportAll = async () => {
+        // await fetch(`http://localhost:8080/api/export_data_tmp_rekap_page/${exportDataAll}/all`, {
+        //     method:'GET'
+        // });
+        // navigate(`http://localhost:8080/api/export_data_tmp_rekap_page/${exportDataAll}/all`)
+        try {
+            // const response = await fetch(`http://localhost:8080/api/export_data_tmp_rekap_page/${exportDataAll}/all`, {
+            //     method: 'GET',
+            //     headers: {
+            //         'Content-Type': 'application/json',
+            //     },
+            // });
+
+            const link = document.createElement('a');
+            link.href = `http://localhost:8080/api/export_data_tmp_rekap_page/${exportDataAll}/all`;
+            // link.setAttribute('download', 'data_export.xlsx'); // Specify the file name
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            console.error('Error during export:', error);
+        }
+    }
+
+    useEffect(() => {
+        console.log(exportDataAll)
+    }, [exportDataAll])
+
     let grandTotalRetailStock = 0;
     let grandTotalPremiumStock = 0;
     let grandTotalRetailGapStock = 0;
@@ -114,6 +194,48 @@ const HomeSCMT = () => {
 	                                    </div>
 	                                </div>
 	                            </div>
+
+                                {login && (
+                                <div className="container-fluid p-0" style={{width: "100%"}}>
+                                    <div className="export-filter mb-1 row">
+                                        <div className="col-md-6 order-md-1 order-2">
+                                            <form className="mt-3" id="form_export">
+                                                <div className="row">
+                                                    <div className="col-4">
+                                                        <select id="exportFilter" onChange={handleExportChange} className="form-control" style={{marginLeft:"0"}}>
+                                                            <option value="all">All</option>
+                                                            <option value="merah">Merah</option>
+                                                            <option value="kuning">Kuning</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="col-6" style={{marginLeft:"-20px"}}>
+                                                        <button onClick={handleOnClickExport} className="btn btn-secondary mb-2 col-6" value="false" type="button">Export Data</button>
+                                                    </div>
+                                                </div>
+                                            </form>
+
+                                            <span className="ml-1">{waktuUpdate && (`Last update: ${waktuUpdate}`)} </span>
+                                        </div>
+                                        <div className="col-md-6 order-1 d-flex justify-content-end">
+                                            <form className="mt-3" id="form_export_all">
+                                                <div className="row">
+                                                    <div className="col-6">
+                                                        <select id="exportFilterAll" onChange={handleExportAllChange} className="form-control">
+                                                            <option value="all">All</option>
+                                                            <option value="merah">Merah</option>
+                                                            <option value="kuning">Kuning</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="col-6">
+                                                        <button onClick={handleOnClickExportAll} className="btn btn-secondary mb-2" value="false" type="button">Export All Data</button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                )}
+
 
 	                            <div className="category-filter">
 	                            <div className="table-responsive">

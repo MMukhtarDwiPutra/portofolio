@@ -11,6 +11,7 @@ import Login from '../Views/SCMT/Login';
 import UploadFileDataStock from '../Views/SCMT/UploadFileDataStock';
 import UploadDataPengiriman from '../Views/SCMT/UploadDataPengiriman';
 import UploadDataDatabaseMinimumStock from '../Views/SCMT/UploadDataDatabaseMinimumStock';
+import EditProfile from '../Views/SCMT/EditProfile';
 
 function RoutesIndex() {
     return (
@@ -25,6 +26,7 @@ function RoutesIndex() {
             <Route path="/scmt/upload_file_data_stock" element={<UploadFileDataStock />} />
             <Route path="/scmt/upload_file_pengiriman" element={<UploadDataPengiriman />} />
             <Route path="/scmt/upload_file_minimum_stock" element={<UploadDataDatabaseMinimumStock />} />
+            <Route path="/scmt/edit_profile" element={<EditProfile />} />
         </Routes>
     )
 }

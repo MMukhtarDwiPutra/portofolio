@@ -2,6 +2,7 @@ import React, {Component, useEffect, StrictMode, useState  } from 'react'
 import Logo from '../../Assets/img/minitok.jpeg'
 import Image from 'react-bootstrap/Image';
 import {useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
 
 const Login = () => {
 	const [data, setData] = useState({
@@ -10,6 +11,7 @@ const Login = () => {
 	  });
 
 	const [redirect, setRedirect] = useState(false)
+	const [message, setMessage] = useState('');
 
 	const handleChange = (e) => {
 	    const { name, value } = e.target;
@@ -17,8 +19,6 @@ const Login = () => {
 	      ...prevData,
 	      [name]: value,
 	    }));
-
-	    console.log("tes")
 	};
 
 	const handleSubmit = async (e) => {
@@ -34,14 +34,17 @@ const Login = () => {
 	        body: JSON.stringify(data),
 	      });
 
-	      if (!response.ok) {
-	        throw new Error('Password salah');
+	      const result = await response.json();
+	      if (result.data.message != "Login sukses!") {
+	        setMessage(result.data.message);
+	        setData({
+			  username: '',
+			  password: ''
+			});
 	      }else{
-	          const responseData = await response.json();
-	          console.log('Success:', responseData);
+	          console.log('Success:', result);
+	      	  setRedirect(true)
 	      }
-
-	      setRedirect(true)
 	    } catch (error) {
 	      console.error('Error:', error);
 	    }
@@ -59,8 +62,17 @@ const Login = () => {
             <div className="row h-100">
                 <div className="col-sm-12 d-flex justify-content-center">
                         <div className="card mx-auto my-auto" style={{width:"500px"}}>
+                        {message && (
+			                        <div className="alert alert-success alert-dismissible fade show ml-3 mr-3 mt-3" role="alert">
+			                            <strong style={{fontSize:"15px", fontWeight:"bold"}}>{message}</strong>
+			                        </div>
+			                    )}
                             <div className="card-body">
-
+                            	<div className="row d-flex justify-content-end">
+                            		<div className="col-3">
+                            		<Link className="btn btn-secondary" to="/scmt/rekap_delivery">Dashboard</Link>
+                            		</div>
+                            	</div>
                                 <h4 className="text-center font-size-20" style={{color: "#EE1C25"}}><b><Image src={Logo} className="img-fluid" alt="Logo" width="120px" height="120px"/></b></h4>
                                 <div className="text-center">
                                     <span>
@@ -73,16 +85,16 @@ const Login = () => {
 
             
                                 <div className="p-3">
-                                    <form className="form-horizontal mt-3" onSubmit={handleSubmit} method="POST" enctype="multipart/form-data">
+                                    <form className="form-horizontal mt-3" onSubmit={handleSubmit} method="POST" encType="multipart/form-data">
                                         <div className="form-group mb-3 row">
                                             <div className="col-12">
-                                                <input className="form-control" type="text" name="username" onChange={handleChange} required="" placeholder="Username"/>
+                                                <input className="form-control" type="text" name="username" onChange={handleChange} value={data.username} required="" placeholder="Username"/>
                                             </div>
                                         </div>
             
                                         <div className="form-group mb-3 row">
                                             <div className="col-12">
-                                                <input className="form-control" type="password" name="password" required="" onChange={handleChange} placeholder="Password"/>
+                                                <input className="form-control" type="password" name="password" required="" onChange={handleChange} value={data.password} placeholder="Password"/>
                                             </div>
                                         </div>
             

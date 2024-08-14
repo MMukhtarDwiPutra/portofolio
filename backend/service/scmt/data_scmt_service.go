@@ -30,6 +30,7 @@ type DataTmpService interface{
 	DownloadTemplateMinimumStock() ([]byte, string, error)
 	DownloadTemplateDataTmp() ([]byte, string, error)
 	UploadDataTmp()
+	ExportDataTmp(jenisWarna string, jenisExport string) ([]byte, string, error)
 }
 
 type dataTmpService struct{
@@ -459,7 +460,7 @@ func (s *dataTmpService) RekapDeliveryWitel(lokasiWH string) map[string]interfac
 
 					if(witelSlice[i].RetailStockNokia < witelSlice[i].BatasBawahRetailALU){
 						result = witelSlice[i].BatasAtasRetailALU - witelSlice[i].RetailStockNokia
-						witelSlice[i].QtyKirimRetailALU += roundToNearest(result, 10)
+						witelSlice[i].QtyKirimRetailALU += roundToNearest(result, 6)
 					}
 
 					if(witelSlice[i].PremiumStockZTE < witelSlice[i].BatasBawahPremiumZTE){
@@ -474,7 +475,7 @@ func (s *dataTmpService) RekapDeliveryWitel(lokasiWH string) map[string]interfac
 
 					if(witelSlice[i].PremiumStockFiberhome < witelSlice[i].BatasBawahPremiumFH){
 						result = witelSlice[i].BatasAtasPremiumFH - witelSlice[i].PremiumStockFiberhome
-						witelSlice[i].QtyKirimPremiumFH += roundToNearest(result, 10)
+						witelSlice[i].QtyKirimPremiumFH += roundToNearest(result, 8)
 					}
 
 					for j := range dataSO {
@@ -495,7 +496,7 @@ func (s *dataTmpService) RekapDeliveryWitel(lokasiWH string) map[string]interfac
 
 						if(dataSO[j].RetailStockNokia < dataSO[j].BatasBawahRetailALU){
 							result = dataSO[j].BatasAtasRetailALU - dataSO[j].RetailStockNokia
-							witelSlice[i].QtyKirimRetailALU += roundToNearest(result, 10)
+							witelSlice[i].QtyKirimRetailALU += roundToNearest(result, 6)
 						}
 
 						if(dataSO[j].PremiumStockZTE < dataSO[j].BatasBawahPremiumZTE){
@@ -510,7 +511,7 @@ func (s *dataTmpService) RekapDeliveryWitel(lokasiWH string) map[string]interfac
 
 						if(dataSO[j].PremiumStockFiberhome < dataSO[j].BatasBawahPremiumFH){
 							result = dataSO[j].BatasAtasPremiumFH - dataSO[j].PremiumStockFiberhome
-							witelSlice[i].QtyKirimPremiumFH += roundToNearest(result, 10)
+							witelSlice[i].QtyKirimPremiumFH += roundToNearest(result, 8)
 						}
 
 						if(float64(dataSO[j].RetailStockZTE - dataSO[j].RetailZTE + dataSO[j].OnDeliveryRetailZTE) < -(float64(dataSO[j].RetailZTE) * 0.75)){
@@ -571,7 +572,7 @@ func (s *dataTmpService) RekapDeliveryWitel(lokasiWH string) map[string]interfac
 
 				if(dataSO[j].RetailStockNokia < dataSO[j].BatasBawahRetailALU){
 					result = dataSO[j].BatasAtasRetailALU - dataSO[j].RetailStockNokia
-					dataSO[j].QtyKirimRetailALU += roundToNearest(result, 10)
+					dataSO[j].QtyKirimRetailALU += roundToNearest(result, 6)
 				}
 
 				if(dataSO[j].PremiumStockZTE < dataSO[j].BatasBawahPremiumZTE){
@@ -586,7 +587,7 @@ func (s *dataTmpService) RekapDeliveryWitel(lokasiWH string) map[string]interfac
 
 				if(dataSO[j].PremiumStockFiberhome < dataSO[j].BatasBawahPremiumFH){
 					result = dataSO[j].BatasAtasPremiumFH - dataSO[j].PremiumStockFiberhome
-					dataSO[j].QtyKirimPremiumFH += roundToNearest(result, 10)
+					dataSO[j].QtyKirimPremiumFH += roundToNearest(result, 8)
 				}
 
 				if(float64(dataSO[j].RetailStockZTE - dataSO[j].RetailZTE + dataSO[j].OnDeliveryRetailZTE) < -(float64(dataSO[j].RetailZTE) * 0.75)){
@@ -630,6 +631,23 @@ func (s *dataTmpService) RekapDeliveryTREG() map[string]interface{}{
 	// data = s.HitungQtyKirim(data)
 	var result int
 	var sumAllZTE, sumAllFH, sumAllHW, sumAllALU, sumAllPZTE, sumAllPFH, sumAllPHW int
+	waktuUpdate, waktuDibuat := s.dataTmpRepository.GetTableLastUpdate()
+	layout := "2006-01-02 15:04:05"
+
+	if(waktuUpdate != ""){
+		waktuDibuatTimeFormat, err := time.Parse(layout, waktuDibuat)
+		helper.PanicIfError(err)
+
+		waktuUpdateTimeFormat, err := time.Parse(layout, waktuUpdate)
+		helper.PanicIfError(err)
+
+		data["last_update"] = waktuUpdate
+		if(waktuDibuatTimeFormat.After(waktuUpdateTimeFormat)){
+			data["last_update"] = waktuDibuat
+		}
+	}else{
+		data["last_update"] = waktuDibuat
+	}
 
 	if witelSlice, ok := data["witel"].([]domain.TREGMinimumResponse); ok {
 		for i := range witelSlice{
@@ -735,6 +753,24 @@ func (s *dataTmpService) RekapDeliveryTREG() map[string]interface{}{
 					sumAllPFH += sumPFH;
 					sumAllPHW += sumPHW;
 				}
+				witelSlice[i].BatasAtasRetailFH = int(witelSlice[i].RetailFH * 120 / 100)
+				witelSlice[i].BatasAtasRetailHW = int(witelSlice[i].RetailHW * 120 / 100)
+				witelSlice[i].BatasAtasRetailZTE = int(witelSlice[i].RetailZTE * 120 / 100)
+				witelSlice[i].BatasAtasRetailALU = int(witelSlice[i].RetailALU * 120 / 100)
+
+				witelSlice[i].BatasAtasPremiumFH = int(witelSlice[i].PremiumFH * 120 / 100)
+				witelSlice[i].BatasAtasPremiumHW = int(witelSlice[i].PremiumHW * 120 / 100)
+				witelSlice[i].BatasAtasPremiumZTE = int(witelSlice[i].PremiumZTE * 120 / 100)
+
+				witelSlice[i].BatasBawahRetailFH = int(witelSlice[i].RetailFH * 70 / 100)
+				witelSlice[i].BatasBawahRetailHW = int(witelSlice[i].RetailHW * 70 / 100)
+				witelSlice[i].BatasBawahRetailZTE = int(witelSlice[i].RetailZTE * 70 / 100)
+				witelSlice[i].BatasBawahRetailALU = int(witelSlice[i].RetailALU * 70 / 100)
+
+				witelSlice[i].BatasBawahPremiumFH = int(witelSlice[i].PremiumFH * 70 / 100)
+				witelSlice[i].BatasBawahPremiumHW = int(witelSlice[i].PremiumHW * 70 / 100)
+				witelSlice[i].BatasBawahPremiumZTE = int(witelSlice[i].PremiumZTE * 70 / 100)
+				
 			}else if(strings.Contains(lokasiWH, "WITEL")){
 				witel = s.gudangRepository.GetAllSOFromWitel(lokasiWH)
 
@@ -768,7 +804,7 @@ func (s *dataTmpService) RekapDeliveryTREG() map[string]interface{}{
 
 						if(dataSO[j].RetailStockNokia < dataSO[j].BatasBawahRetailALU){
 							result = dataSO[j].BatasAtasRetailALU - dataSO[j].RetailStockNokia
-							sumALU += roundToNearest(result, 10)
+							sumALU += roundToNearest(result, 6)
 						}
 
 						if(dataSO[j].PremiumStockZTE < dataSO[j].BatasBawahPremiumZTE){
@@ -829,37 +865,37 @@ func (s *dataTmpService) RekapDeliveryTREG() map[string]interface{}{
 				
 				if(dataSO.RetailStockZTE < dataSO.BatasBawahRetailZTE){
 					result = dataSO.BatasAtasRetailZTE - dataSO.RetailStockZTE
-					sumAllZTE += roundToNearest(result, 20)
+					sumAllZTE += roundToNearest(result, 10)
 				}
 
 				if(dataSO.RetailStockHuawei < dataSO.BatasBawahRetailHW){
 					result = dataSO.BatasAtasRetailHW - dataSO.RetailStockHuawei
-					sumAllHW += roundToNearest(result, 20)
+					sumAllHW += roundToNearest(result, 10)
 				}
 
 				if(dataSO.RetailStockFiberhome < dataSO.BatasBawahRetailFH){
 					result = dataSO.BatasAtasRetailFH - dataSO.RetailStockFiberhome
-					sumAllFH += roundToNearest(result, 20)
+					sumAllFH += roundToNearest(result, 10)
 				}
 
 				if(dataSO.RetailStockNokia < dataSO.BatasBawahRetailALU){
 					result = dataSO.BatasAtasRetailALU - dataSO.RetailStockNokia
-					sumAllALU += roundToNearest(result, 20)
+					sumAllALU += roundToNearest(result, 6)
 				}
 
 				if(dataSO.PremiumStockZTE < dataSO.BatasBawahPremiumZTE){
 					result = dataSO.BatasAtasPremiumZTE - dataSO.PremiumStockZTE
-					sumAllPZTE += roundToNearest(result, 20)
+					sumAllPZTE += roundToNearest(result, 10)
 				}
 
 				if(dataSO.PremiumStockHuawei < dataSO.BatasBawahPremiumHW){
 					result = dataSO.BatasAtasPremiumHW - dataSO.PremiumStockHuawei
-					sumAllPHW += roundToNearest(result, 20)
+					sumAllPHW += roundToNearest(result, 12)
 				}
 
 				if(dataSO.PremiumStockFiberhome < dataSO.BatasBawahPremiumFH){
 					result = dataSO.BatasAtasPremiumFH - dataSO.PremiumStockFiberhome
-					sumAllPFH += roundToNearest(result, 20)
+					sumAllPFH += roundToNearest(result, 8)
 				}
 
 				if(float64(dataSO.RetailStockZTE - dataSO.RetailZTE + dataSO.OnDeliveryRetailZTE) < -(float64(dataSO.RetailZTE) * 0.75)){
@@ -899,6 +935,8 @@ func (s *dataTmpService) RekapDeliveryTREG() map[string]interface{}{
 			witelSlice[i].QtyKirimPremiumZTE = sumAllPZTE
 			witelSlice[i].QtyKirimPremiumFH = sumAllPFH
 			witelSlice[i].QtyKirimPremiumHW = sumAllPHW
+
+			witelSlice[i].MinimumQty = strconv.Itoa(witelSlice[i].TotalRetail + witelSlice[i].TotalPremium)
 		}
 
 		data["jenis_warehouse"] = "Witel"
@@ -921,37 +959,37 @@ func (s *dataTmpService) HitungQtyKirim(data map[string]interface{}) map[string]
 		for i := range witelSlice {
 			if(witelSlice[i].RetailStockFiberhome < witelSlice[i].BatasBawahRetailFH){
 				result = witelSlice[i].BatasAtasRetailFH - witelSlice[i].RetailStockFiberhome
-				witelSlice[i].QtyKirimRetailFH = roundToNearest(result, 5)
+				witelSlice[i].QtyKirimRetailFH = roundToNearest(result, 10)
 			}
 
 			if(witelSlice[i].RetailStockHuawei < witelSlice[i].BatasBawahRetailHW){
 				result = witelSlice[i].BatasAtasRetailHW - witelSlice[i].RetailStockHuawei
-				witelSlice[i].QtyKirimRetailHW = roundToNearest(result, 5)
+				witelSlice[i].QtyKirimRetailHW = roundToNearest(result, 10)
 			}
 
 			if(witelSlice[i].RetailStockZTE < witelSlice[i].BatasBawahRetailZTE){
 				result = witelSlice[i].BatasAtasRetailZTE - witelSlice[i].RetailStockZTE
-				witelSlice[i].QtyKirimRetailZTE = roundToNearest(result, 5)
+				witelSlice[i].QtyKirimRetailZTE = roundToNearest(result, 10)
 			}
 
 			if(witelSlice[i].RetailStockNokia < witelSlice[i].BatasBawahRetailALU){
 				result = witelSlice[i].BatasAtasRetailALU - witelSlice[i].RetailStockNokia
-				witelSlice[i].QtyKirimRetailALU = roundToNearest(result, 5)
+				witelSlice[i].QtyKirimRetailALU = roundToNearest(result, 6)
 			}
 
 			if(witelSlice[i].PremiumStockFiberhome < witelSlice[i].BatasBawahPremiumFH){
 				result = witelSlice[i].BatasAtasPremiumFH - witelSlice[i].PremiumStockFiberhome
-				witelSlice[i].QtyKirimPremiumFH = roundToNearest(result, 5)
+				witelSlice[i].QtyKirimPremiumFH = roundToNearest(result, 8)
 			}
 
 			if(witelSlice[i].PremiumStockHuawei < witelSlice[i].BatasBawahPremiumHW){
 				result = witelSlice[i].BatasAtasPremiumHW - witelSlice[i].PremiumStockHuawei
-				witelSlice[i].QtyKirimPremiumHW = roundToNearest(result, 5)
+				witelSlice[i].QtyKirimPremiumHW = roundToNearest(result, 12)
 			}
 
 			if(witelSlice[i].PremiumStockZTE < witelSlice[i].BatasBawahPremiumZTE){
 				result = witelSlice[i].BatasAtasPremiumZTE - witelSlice[i].PremiumStockZTE
-				witelSlice[i].QtyKirimPremiumZTE = roundToNearest(result, 5)
+				witelSlice[i].QtyKirimPremiumZTE = roundToNearest(result, 10)
 			}
 		}
 	}else {
@@ -1240,4 +1278,360 @@ func (s *dataTmpService) UploadDataTmp(){
             helper.PanicIfError(err)
         }
     }()
+}
+
+func (s *dataTmpService) ExportDataTmp(jenisWarna string, jenisExport string) ([]byte, string, error){
+	var filename string
+
+	templatePath := "template/template_qty_kirim.xlsx"
+    fileExport, err := excelize.OpenFile(templatePath)
+    helper.PanicIfError(err)
+
+	// Get the current time
+	currentTime := time.Now()
+
+	// Format the time as YYYY-MM-DD
+	formattedDate := currentTime.Format("2006-01-02")
+	filename = "Hasil_Rekap_Stock_SCMT_"+formattedDate+".xlsx";
+
+	// Get the active sheet index
+    activeSheetIndexExport := fileExport.GetActiveSheetIndex()
+
+    // Get the name of the active sheet using the index
+    activeSheetNameExport := fileExport.GetSheetName(activeSheetIndexExport)
+
+    data := s.CountDataPerWitelTmp()
+    data = s.HitungQtyKirim(data)
+
+    idxAwal := 0
+
+    styleRed, err := fileExport.NewStyle(&excelize.Style{
+        Fill: excelize.Fill{
+            Type:    "pattern",
+            Color:   []string{"#FF0000"}, // Hex color code for red
+            Pattern: 1,
+        },
+    })
+
+    styleYellow, err := fileExport.NewStyle(&excelize.Style{
+        Fill: excelize.Fill{
+            Type:    "pattern",
+            Color:   []string{"#FFFF00"}, // Hex color code for red
+            Pattern: 1,
+        },
+    })
+
+    if(jenisExport != "all"){
+    	if(jenisExport == "treg_only"){
+    		data = s.RekapDeliveryTREG()
+    		data["witel"] = data["treg"]
+    	}else{
+    		data = s.RekapDeliveryWitel(jenisExport)
+    		data["witel"] = data["response"]
+    	}
+    }
+
+
+    if witelSlice, ok := data["witel"].([]domain.TREGMinimumResponse); ok {
+		if(jenisWarna == "all"){
+			i := 4;
+			for j:=idxAwal; j < len(witelSlice); j++ {
+				fileExport.SetCellValue(activeSheetNameExport, "A"+strconv.Itoa(i), witelSlice[j].Regional)
+				fileExport.SetCellValue(activeSheetNameExport, "B"+strconv.Itoa(i), witelSlice[j].LokasiWH)
+				fileExport.SetCellValue(activeSheetNameExport, "C"+strconv.Itoa(i), witelSlice[j].MinimumQty)
+				fileExport.SetCellValue(activeSheetNameExport, "D"+strconv.Itoa(i), witelSlice[j].RetailFH)
+				fileExport.SetCellValue(activeSheetNameExport, "E"+strconv.Itoa(i), witelSlice[j].RetailHW)
+				fileExport.SetCellValue(activeSheetNameExport, "F"+strconv.Itoa(i), witelSlice[j].RetailZTE)
+				fileExport.SetCellValue(activeSheetNameExport, "G"+strconv.Itoa(i), witelSlice[j].RetailALU)
+				fileExport.SetCellValue(activeSheetNameExport, "H"+strconv.Itoa(i), witelSlice[j].TotalRetail)
+				fileExport.SetCellValue(activeSheetNameExport, "I"+strconv.Itoa(i), witelSlice[j].PremiumFH)
+				fileExport.SetCellValue(activeSheetNameExport, "J"+strconv.Itoa(i), witelSlice[j].PremiumHW)
+				fileExport.SetCellValue(activeSheetNameExport, "K"+strconv.Itoa(i), witelSlice[j].PremiumZTE)
+				fileExport.SetCellValue(activeSheetNameExport, "L"+strconv.Itoa(i), witelSlice[j].TotalPremium)
+				fileExport.SetCellValue(activeSheetNameExport, "M"+strconv.Itoa(i), witelSlice[j].RetailStockFiberhome)
+				fileExport.SetCellValue(activeSheetNameExport, "N"+strconv.Itoa(i), witelSlice[j].RetailStockHuawei)
+				fileExport.SetCellValue(activeSheetNameExport, "O"+strconv.Itoa(i), witelSlice[j].RetailStockZTE)
+				fileExport.SetCellValue(activeSheetNameExport, "P"+strconv.Itoa(i), witelSlice[j].RetailStockNokia)
+				fileExport.SetCellValue(activeSheetNameExport, "Q"+strconv.Itoa(i), witelSlice[j].TotalRetailStock)
+				fileExport.SetCellValue(activeSheetNameExport, "R"+strconv.Itoa(i), witelSlice[j].PremiumStockFiberhome)
+				fileExport.SetCellValue(activeSheetNameExport, "S"+strconv.Itoa(i), witelSlice[j].PremiumStockHuawei)
+				fileExport.SetCellValue(activeSheetNameExport, "T"+strconv.Itoa(i), witelSlice[j].PremiumStockZTE)
+				fileExport.SetCellValue(activeSheetNameExport, "U"+strconv.Itoa(i), witelSlice[j].TotalPremiumStock)
+				fileExport.SetCellValue(activeSheetNameExport, "V"+strconv.Itoa(i), witelSlice[j].RetailStockFiberhome - witelSlice[j].RetailFH + witelSlice[j].OnDeliveryRetailFiberhome)
+				fileExport.SetCellValue(activeSheetNameExport, "W"+strconv.Itoa(i), witelSlice[j].RetailStockHuawei- witelSlice[j].RetailHW + witelSlice[j].OnDeliveryRetailHuawei)
+				fileExport.SetCellValue(activeSheetNameExport, "X"+strconv.Itoa(i), witelSlice[j].RetailStockZTE - witelSlice[j].RetailZTE + witelSlice[j].OnDeliveryRetailZTE)
+				fileExport.SetCellValue(activeSheetNameExport, "Y"+strconv.Itoa(i), witelSlice[j].RetailStockNokia - witelSlice[j].RetailALU + witelSlice[j].OnDeliveryRetailNokia)
+				fileExport.SetCellValue(activeSheetNameExport, "Z"+strconv.Itoa(i), witelSlice[j].TotalRetailStock - witelSlice[j].TotalRetail + witelSlice[j].OnDeliveryTotalRetail)
+
+				fileExport.SetCellValue(activeSheetNameExport, "AA"+strconv.Itoa(i), witelSlice[j].PremiumStockFiberhome - witelSlice[j].PremiumFH + witelSlice[j].OnDeliveryPremiumFiberhome)
+				fileExport.SetCellValue(activeSheetNameExport, "AB"+strconv.Itoa(i), witelSlice[j].PremiumStockHuawei - witelSlice[j].PremiumHW + witelSlice[j].OnDeliveryPremiumHuawei)
+				fileExport.SetCellValue(activeSheetNameExport, "AC"+strconv.Itoa(i), witelSlice[j].PremiumStockZTE - witelSlice[j].PremiumZTE + witelSlice[j].OnDeliveryPremiumZTE)
+				fileExport.SetCellValue(activeSheetNameExport, "AD"+strconv.Itoa(i), witelSlice[j].TotalPremiumStock - witelSlice[j].TotalPremium + witelSlice[j].OnDeliveryTotalPremium)
+
+				fileExport.SetCellValue(activeSheetNameExport, "AE"+strconv.Itoa(i), witelSlice[j].BatasAtasRetailFH)
+				fileExport.SetCellValue(activeSheetNameExport, "AF"+strconv.Itoa(i), witelSlice[j].BatasAtasRetailHW)
+				fileExport.SetCellValue(activeSheetNameExport, "AG"+strconv.Itoa(i), witelSlice[j].BatasAtasRetailZTE)
+				fileExport.SetCellValue(activeSheetNameExport, "AH"+strconv.Itoa(i), witelSlice[j].BatasAtasRetailALU)
+				fileExport.SetCellValue(activeSheetNameExport, "AI"+strconv.Itoa(i), witelSlice[j].BatasAtasRetailFH + witelSlice[j].BatasAtasRetailHW + witelSlice[j].BatasAtasRetailZTE + witelSlice[j].BatasAtasRetailALU)
+
+				fileExport.SetCellValue(activeSheetNameExport, "AJ"+strconv.Itoa(i), witelSlice[j].BatasAtasPremiumFH)
+				fileExport.SetCellValue(activeSheetNameExport, "AK"+strconv.Itoa(i), witelSlice[j].BatasAtasPremiumHW)
+				fileExport.SetCellValue(activeSheetNameExport, "AL"+strconv.Itoa(i), witelSlice[j].BatasAtasPremiumZTE)
+				fileExport.SetCellValue(activeSheetNameExport, "AM"+strconv.Itoa(i), witelSlice[j].BatasAtasPremiumFH + witelSlice[j].BatasAtasPremiumHW + witelSlice[j].BatasAtasPremiumZTE)
+
+				fileExport.SetCellValue(activeSheetNameExport, "AN"+strconv.Itoa(i), witelSlice[j].BatasBawahRetailFH)
+				fileExport.SetCellValue(activeSheetNameExport, "AO"+strconv.Itoa(i), witelSlice[j].BatasBawahRetailHW)
+				fileExport.SetCellValue(activeSheetNameExport, "AP"+strconv.Itoa(i), witelSlice[j].BatasBawahRetailZTE)
+				fileExport.SetCellValue(activeSheetNameExport, "AQ"+strconv.Itoa(i), witelSlice[j].BatasBawahRetailALU)
+				fileExport.SetCellValue(activeSheetNameExport, "AR"+strconv.Itoa(i), witelSlice[j].BatasBawahRetailFH + witelSlice[j].BatasBawahRetailHW + witelSlice[j].BatasBawahRetailZTE + witelSlice[j].BatasBawahRetailALU)
+
+				fileExport.SetCellValue(activeSheetNameExport, "AS"+strconv.Itoa(i), witelSlice[j].BatasBawahPremiumFH)
+				fileExport.SetCellValue(activeSheetNameExport, "AT"+strconv.Itoa(i), witelSlice[j].BatasBawahPremiumHW)
+				fileExport.SetCellValue(activeSheetNameExport, "AU"+strconv.Itoa(i), witelSlice[j].BatasBawahPremiumZTE)
+				fileExport.SetCellValue(activeSheetNameExport, "AV"+strconv.Itoa(i), witelSlice[j].BatasBawahPremiumFH + witelSlice[j].BatasBawahPremiumHW + witelSlice[j].BatasBawahPremiumZTE)
+
+				fileExport.SetCellValue(activeSheetNameExport, "AW"+strconv.Itoa(i), witelSlice[j].QtyKirimRetailFH)
+				fileExport.SetCellValue(activeSheetNameExport, "AX"+strconv.Itoa(i), witelSlice[j].QtyKirimRetailHW)
+				fileExport.SetCellValue(activeSheetNameExport, "AY"+strconv.Itoa(i), witelSlice[j].QtyKirimRetailZTE)
+				fileExport.SetCellValue(activeSheetNameExport, "AZ"+strconv.Itoa(i), witelSlice[j].QtyKirimRetailALU)
+				fileExport.SetCellValue(activeSheetNameExport, "BA"+strconv.Itoa(i), witelSlice[j].QtyKirimRetailFH + witelSlice[j].QtyKirimRetailHW + witelSlice[j].QtyKirimRetailZTE + witelSlice[j].QtyKirimRetailALU)
+
+				fileExport.SetCellValue(activeSheetNameExport, "BB"+strconv.Itoa(i), witelSlice[j].QtyKirimPremiumFH)
+				fileExport.SetCellValue(activeSheetNameExport, "BC"+strconv.Itoa(i), witelSlice[j].QtyKirimPremiumHW)
+				fileExport.SetCellValue(activeSheetNameExport, "BD"+strconv.Itoa(i), witelSlice[j].QtyKirimPremiumZTE)
+				fileExport.SetCellValue(activeSheetNameExport, "BE"+strconv.Itoa(i), witelSlice[j].QtyKirimPremiumFH + witelSlice[j].QtyKirimPremiumHW + witelSlice[j].QtyKirimPremiumZTE)
+
+				fileExport.SetCellValue(activeSheetNameExport, "BF"+strconv.Itoa(i), witelSlice[j].OnDeliveryRetailFiberhome)
+				fileExport.SetCellValue(activeSheetNameExport, "BG"+strconv.Itoa(i), witelSlice[j].OnDeliveryRetailHuawei)
+				fileExport.SetCellValue(activeSheetNameExport, "BH"+strconv.Itoa(i), witelSlice[j].OnDeliveryRetailZTE)
+				fileExport.SetCellValue(activeSheetNameExport, "BI"+strconv.Itoa(i), witelSlice[j].OnDeliveryRetailNokia)
+				fileExport.SetCellValue(activeSheetNameExport, "BJ"+strconv.Itoa(i), witelSlice[j].OnDeliveryTotalRetail)
+
+				fileExport.SetCellValue(activeSheetNameExport, "BK"+strconv.Itoa(i), witelSlice[j].OnDeliveryPremiumFiberhome)
+				fileExport.SetCellValue(activeSheetNameExport, "BL"+strconv.Itoa(i), witelSlice[j].OnDeliveryPremiumHuawei)
+				fileExport.SetCellValue(activeSheetNameExport, "BM"+strconv.Itoa(i), witelSlice[j].OnDeliveryPremiumZTE)
+				fileExport.SetCellValue(activeSheetNameExport, "BN"+strconv.Itoa(i), witelSlice[j].OnDeliveryTotalPremium)
+
+				if(float64(witelSlice[j].TotalRetailStock - witelSlice[j].TotalRetail + witelSlice[j].OnDeliveryTotalRetail) < -(float64(witelSlice[j].TotalRetail) * 0.75)){
+					if err := fileExport.SetCellStyle(activeSheetNameExport, "Z"+strconv.Itoa(i), "Z"+strconv.Itoa(i), styleRed); err != nil {
+				        helper.PanicIfError(err)
+				    }
+				}else if(witelSlice[j].TotalRetailStock - witelSlice[j].TotalRetail + witelSlice[j].OnDeliveryTotalRetail < 0){
+					if err := fileExport.SetCellStyle(activeSheetNameExport, "Z"+strconv.Itoa(i), "Z"+strconv.Itoa(i), styleYellow); err != nil {
+				        helper.PanicIfError(err)
+				    }
+				}
+
+				if(float64(witelSlice[j].TotalPremiumStock - witelSlice[j].TotalPremium + witelSlice[j].OnDeliveryTotalPremium) < -(float64(witelSlice[j].TotalPremium) * 0.75)){
+					if err := fileExport.SetCellStyle(activeSheetNameExport, "AD"+strconv.Itoa(i), "AD"+strconv.Itoa(i), styleRed); err != nil {
+				        helper.PanicIfError(err)
+				    }
+				}else if(witelSlice[j].TotalPremiumStock - witelSlice[j].TotalPremium + witelSlice[j].OnDeliveryTotalPremium < 0){
+					if err := fileExport.SetCellStyle(activeSheetNameExport, "AD"+strconv.Itoa(i), "AD"+strconv.Itoa(i), styleYellow); err != nil {
+				        helper.PanicIfError(err)
+				    }
+				}
+				i += 1
+			}
+		}else if(jenisWarna == "kuning"){
+			i := 4
+			for j:=idxAwal; j < len(witelSlice); j ++{
+				if((witelSlice[j].TotalRetailStock - witelSlice[j].TotalRetail + witelSlice[j].OnDeliveryTotalRetail < 0 && float64(witelSlice[j].TotalRetailStock - witelSlice[j].TotalRetail + witelSlice[j].OnDeliveryTotalRetail) > -(float64(witelSlice[j].TotalRetail) * 0.75)) || (witelSlice[j].TotalPremiumStock - witelSlice[j].TotalPremium + witelSlice[j].OnDeliveryTotalPremium < 0 && float64(witelSlice[j].TotalPremiumStock - witelSlice[j].TotalPremium + witelSlice[j].OnDeliveryTotalPremium) > - (float64(witelSlice[j].TotalPremium) * 0.75))){
+					fileExport.SetCellValue(activeSheetNameExport, "A"+strconv.Itoa(i), witelSlice[j].Regional)
+					fileExport.SetCellValue(activeSheetNameExport, "B"+strconv.Itoa(i), witelSlice[j].LokasiWH)
+					fileExport.SetCellValue(activeSheetNameExport, "C"+strconv.Itoa(i), witelSlice[j].MinimumQty)
+					fileExport.SetCellValue(activeSheetNameExport, "D"+strconv.Itoa(i), witelSlice[j].RetailFH)
+					fileExport.SetCellValue(activeSheetNameExport, "E"+strconv.Itoa(i), witelSlice[j].RetailHW)
+					fileExport.SetCellValue(activeSheetNameExport, "F"+strconv.Itoa(i), witelSlice[j].RetailZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "G"+strconv.Itoa(i), witelSlice[j].RetailALU)
+					fileExport.SetCellValue(activeSheetNameExport, "H"+strconv.Itoa(i), witelSlice[j].TotalRetail)
+					fileExport.SetCellValue(activeSheetNameExport, "I"+strconv.Itoa(i), witelSlice[j].PremiumFH)
+					fileExport.SetCellValue(activeSheetNameExport, "J"+strconv.Itoa(i), witelSlice[j].PremiumHW)
+					fileExport.SetCellValue(activeSheetNameExport, "K"+strconv.Itoa(i), witelSlice[j].PremiumZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "L"+strconv.Itoa(i), witelSlice[j].TotalPremium)
+					fileExport.SetCellValue(activeSheetNameExport, "M"+strconv.Itoa(i), witelSlice[j].RetailStockFiberhome)
+					fileExport.SetCellValue(activeSheetNameExport, "N"+strconv.Itoa(i), witelSlice[j].RetailStockHuawei)
+					fileExport.SetCellValue(activeSheetNameExport, "O"+strconv.Itoa(i), witelSlice[j].RetailStockZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "P"+strconv.Itoa(i), witelSlice[j].RetailStockNokia)
+					fileExport.SetCellValue(activeSheetNameExport, "Q"+strconv.Itoa(i), witelSlice[j].TotalRetailStock)
+					fileExport.SetCellValue(activeSheetNameExport, "R"+strconv.Itoa(i), witelSlice[j].PremiumStockFiberhome)
+					fileExport.SetCellValue(activeSheetNameExport, "S"+strconv.Itoa(i), witelSlice[j].PremiumStockHuawei)
+					fileExport.SetCellValue(activeSheetNameExport, "T"+strconv.Itoa(i), witelSlice[j].PremiumStockZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "U"+strconv.Itoa(i), witelSlice[j].TotalPremiumStock)
+					fileExport.SetCellValue(activeSheetNameExport, "V"+strconv.Itoa(i), witelSlice[j].RetailStockFiberhome - witelSlice[j].RetailFH + witelSlice[j].OnDeliveryRetailFiberhome)
+					fileExport.SetCellValue(activeSheetNameExport, "W"+strconv.Itoa(i), witelSlice[j].RetailStockHuawei- witelSlice[j].RetailHW + witelSlice[j].OnDeliveryRetailHuawei)
+					fileExport.SetCellValue(activeSheetNameExport, "X"+strconv.Itoa(i), witelSlice[j].RetailStockZTE - witelSlice[j].RetailZTE + witelSlice[j].OnDeliveryRetailZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "Y"+strconv.Itoa(i), witelSlice[j].RetailStockNokia - witelSlice[j].RetailALU + witelSlice[j].OnDeliveryRetailNokia)
+					fileExport.SetCellValue(activeSheetNameExport, "Z"+strconv.Itoa(i), witelSlice[j].TotalRetailStock - witelSlice[j].TotalRetail + witelSlice[j].OnDeliveryTotalRetail)
+
+					fileExport.SetCellValue(activeSheetNameExport, "AA"+strconv.Itoa(i), witelSlice[j].PremiumStockFiberhome - witelSlice[j].PremiumFH + witelSlice[j].OnDeliveryPremiumFiberhome)
+					fileExport.SetCellValue(activeSheetNameExport, "AB"+strconv.Itoa(i), witelSlice[j].PremiumStockHuawei - witelSlice[j].PremiumHW + witelSlice[j].OnDeliveryPremiumHuawei)
+					fileExport.SetCellValue(activeSheetNameExport, "AC"+strconv.Itoa(i), witelSlice[j].PremiumStockZTE - witelSlice[j].PremiumZTE + witelSlice[j].OnDeliveryPremiumZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "AD"+strconv.Itoa(i), witelSlice[j].TotalPremiumStock - witelSlice[j].TotalPremium + witelSlice[j].OnDeliveryTotalPremium)
+
+					fileExport.SetCellValue(activeSheetNameExport, "AE"+strconv.Itoa(i), witelSlice[j].BatasAtasRetailFH)
+					fileExport.SetCellValue(activeSheetNameExport, "AF"+strconv.Itoa(i), witelSlice[j].BatasAtasRetailHW)
+					fileExport.SetCellValue(activeSheetNameExport, "AG"+strconv.Itoa(i), witelSlice[j].BatasAtasRetailZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "AH"+strconv.Itoa(i), witelSlice[j].BatasAtasRetailALU)
+					fileExport.SetCellValue(activeSheetNameExport, "AI"+strconv.Itoa(i), witelSlice[j].BatasAtasRetailFH + witelSlice[j].BatasAtasRetailHW + witelSlice[j].BatasAtasRetailZTE + witelSlice[j].BatasAtasRetailALU)
+
+					fileExport.SetCellValue(activeSheetNameExport, "AJ"+strconv.Itoa(i), witelSlice[j].BatasAtasPremiumFH)
+					fileExport.SetCellValue(activeSheetNameExport, "AK"+strconv.Itoa(i), witelSlice[j].BatasAtasPremiumHW)
+					fileExport.SetCellValue(activeSheetNameExport, "AL"+strconv.Itoa(i), witelSlice[j].BatasAtasPremiumZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "AM"+strconv.Itoa(i), witelSlice[j].BatasAtasPremiumFH + witelSlice[j].BatasAtasPremiumHW + witelSlice[j].BatasAtasPremiumZTE)
+
+					fileExport.SetCellValue(activeSheetNameExport, "AN"+strconv.Itoa(i), witelSlice[j].BatasBawahRetailFH)
+					fileExport.SetCellValue(activeSheetNameExport, "AO"+strconv.Itoa(i), witelSlice[j].BatasBawahRetailHW)
+					fileExport.SetCellValue(activeSheetNameExport, "AP"+strconv.Itoa(i), witelSlice[j].BatasBawahRetailZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "AQ"+strconv.Itoa(i), witelSlice[j].BatasBawahRetailALU)
+					fileExport.SetCellValue(activeSheetNameExport, "AR"+strconv.Itoa(i), witelSlice[j].BatasBawahRetailFH + witelSlice[j].BatasBawahRetailHW + witelSlice[j].BatasBawahRetailZTE + witelSlice[j].BatasBawahRetailALU)
+
+					fileExport.SetCellValue(activeSheetNameExport, "AS"+strconv.Itoa(i), witelSlice[j].BatasBawahPremiumFH)
+					fileExport.SetCellValue(activeSheetNameExport, "AT"+strconv.Itoa(i), witelSlice[j].BatasBawahPremiumHW)
+					fileExport.SetCellValue(activeSheetNameExport, "AU"+strconv.Itoa(i), witelSlice[j].BatasBawahPremiumZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "AV"+strconv.Itoa(i), witelSlice[j].BatasBawahPremiumFH + witelSlice[j].BatasBawahPremiumHW + witelSlice[j].BatasBawahPremiumZTE)
+
+					fileExport.SetCellValue(activeSheetNameExport, "AW"+strconv.Itoa(i), witelSlice[j].QtyKirimRetailFH)
+					fileExport.SetCellValue(activeSheetNameExport, "AX"+strconv.Itoa(i), witelSlice[j].QtyKirimRetailHW)
+					fileExport.SetCellValue(activeSheetNameExport, "AY"+strconv.Itoa(i), witelSlice[j].QtyKirimRetailZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "AZ"+strconv.Itoa(i), witelSlice[j].QtyKirimRetailALU)
+					fileExport.SetCellValue(activeSheetNameExport, "BA"+strconv.Itoa(i), witelSlice[j].QtyKirimRetailFH + witelSlice[j].QtyKirimRetailHW + witelSlice[j].QtyKirimRetailZTE + witelSlice[j].QtyKirimRetailALU)
+
+					fileExport.SetCellValue(activeSheetNameExport, "BB"+strconv.Itoa(i), witelSlice[j].QtyKirimPremiumFH)
+					fileExport.SetCellValue(activeSheetNameExport, "BC"+strconv.Itoa(i), witelSlice[j].QtyKirimPremiumHW)
+					fileExport.SetCellValue(activeSheetNameExport, "BD"+strconv.Itoa(i), witelSlice[j].QtyKirimPremiumZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "BE"+strconv.Itoa(i), witelSlice[j].QtyKirimPremiumFH + witelSlice[j].QtyKirimPremiumHW + witelSlice[j].QtyKirimPremiumZTE)
+
+					fileExport.SetCellValue(activeSheetNameExport, "BF"+strconv.Itoa(i), witelSlice[j].OnDeliveryRetailFiberhome)
+					fileExport.SetCellValue(activeSheetNameExport, "BG"+strconv.Itoa(i), witelSlice[j].OnDeliveryRetailHuawei)
+					fileExport.SetCellValue(activeSheetNameExport, "BH"+strconv.Itoa(i), witelSlice[j].OnDeliveryRetailZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "BI"+strconv.Itoa(i), witelSlice[j].OnDeliveryRetailNokia)
+					fileExport.SetCellValue(activeSheetNameExport, "BJ"+strconv.Itoa(i), witelSlice[j].OnDeliveryTotalRetail)
+
+					fileExport.SetCellValue(activeSheetNameExport, "BK"+strconv.Itoa(i), witelSlice[j].OnDeliveryPremiumFiberhome)
+					fileExport.SetCellValue(activeSheetNameExport, "BL"+strconv.Itoa(i), witelSlice[j].OnDeliveryPremiumHuawei)
+					fileExport.SetCellValue(activeSheetNameExport, "BM"+strconv.Itoa(i), witelSlice[j].OnDeliveryPremiumZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "BN"+strconv.Itoa(i), witelSlice[j].OnDeliveryTotalPremium)
+
+					if(float64(witelSlice[j].TotalRetailStock - witelSlice[j].TotalRetail + witelSlice[j].OnDeliveryTotalRetail) < 0 && float64(witelSlice[j].TotalRetailStock - witelSlice[j].TotalRetail + witelSlice[j].OnDeliveryTotalRetail) > -(float64(witelSlice[j].TotalRetail) * 0.75)){
+						if err := fileExport.SetCellStyle(activeSheetNameExport, "Z"+strconv.Itoa(i), "Z"+strconv.Itoa(i), styleYellow); err != nil {
+					        helper.PanicIfError(err)
+					    }
+					}
+
+					if(float64(witelSlice[j].TotalPremiumStock - witelSlice[j].TotalPremium + witelSlice[j].OnDeliveryTotalPremium) < 0 && float64(witelSlice[j].TotalPremiumStock - witelSlice[j].TotalPremium + witelSlice[j].OnDeliveryTotalPremium) > -(float64(witelSlice[j].TotalPremium) * 0.75)){
+						if err := fileExport.SetCellStyle(activeSheetNameExport, "AD"+strconv.Itoa(i), "AD"+strconv.Itoa(i), styleYellow); err != nil {
+					        helper.PanicIfError(err)
+					    }
+					}
+
+					i += 1;
+				}
+			}
+			filename = "Hasil_Rekap_Stock_SCMT_Kuning_"+formattedDate+".xlsx"
+		}else if(jenisWarna == "merah"){
+			i := 4;
+			for j := idxAwal; j < len(witelSlice); j ++ {
+				if((float64(witelSlice[j].TotalRetailStock - witelSlice[j].TotalRetail + witelSlice[j].OnDeliveryTotalRetail) < -(float64(witelSlice[j].TotalRetail) * 0.75)) || (float64(witelSlice[j].TotalPremiumStock - witelSlice[j].TotalPremium + witelSlice[j].OnDeliveryTotalPremium) < - (float64(witelSlice[j].TotalPremium) * 0.75))){
+					fileExport.SetCellValue(activeSheetNameExport, "A"+strconv.Itoa(i), witelSlice[j].Regional)
+					fileExport.SetCellValue(activeSheetNameExport, "B"+strconv.Itoa(i), witelSlice[j].LokasiWH)
+					fileExport.SetCellValue(activeSheetNameExport, "C"+strconv.Itoa(i), witelSlice[j].MinimumQty)
+					fileExport.SetCellValue(activeSheetNameExport, "D"+strconv.Itoa(i), witelSlice[j].RetailFH)
+					fileExport.SetCellValue(activeSheetNameExport, "E"+strconv.Itoa(i), witelSlice[j].RetailHW)
+					fileExport.SetCellValue(activeSheetNameExport, "F"+strconv.Itoa(i), witelSlice[j].RetailZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "G"+strconv.Itoa(i), witelSlice[j].RetailALU)
+					fileExport.SetCellValue(activeSheetNameExport, "H"+strconv.Itoa(i), witelSlice[j].TotalRetail)
+					fileExport.SetCellValue(activeSheetNameExport, "I"+strconv.Itoa(i), witelSlice[j].PremiumFH)
+					fileExport.SetCellValue(activeSheetNameExport, "J"+strconv.Itoa(i), witelSlice[j].PremiumHW)
+					fileExport.SetCellValue(activeSheetNameExport, "K"+strconv.Itoa(i), witelSlice[j].PremiumZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "L"+strconv.Itoa(i), witelSlice[j].TotalPremium)
+					fileExport.SetCellValue(activeSheetNameExport, "M"+strconv.Itoa(i), witelSlice[j].RetailStockFiberhome)
+					fileExport.SetCellValue(activeSheetNameExport, "N"+strconv.Itoa(i), witelSlice[j].RetailStockHuawei)
+					fileExport.SetCellValue(activeSheetNameExport, "O"+strconv.Itoa(i), witelSlice[j].RetailStockZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "P"+strconv.Itoa(i), witelSlice[j].RetailStockNokia)
+					fileExport.SetCellValue(activeSheetNameExport, "Q"+strconv.Itoa(i), witelSlice[j].TotalRetailStock)
+					fileExport.SetCellValue(activeSheetNameExport, "R"+strconv.Itoa(i), witelSlice[j].PremiumStockFiberhome)
+					fileExport.SetCellValue(activeSheetNameExport, "S"+strconv.Itoa(i), witelSlice[j].PremiumStockHuawei)
+					fileExport.SetCellValue(activeSheetNameExport, "T"+strconv.Itoa(i), witelSlice[j].PremiumStockZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "U"+strconv.Itoa(i), witelSlice[j].TotalPremiumStock)
+					fileExport.SetCellValue(activeSheetNameExport, "V"+strconv.Itoa(i), witelSlice[j].RetailStockFiberhome - witelSlice[j].RetailFH + witelSlice[j].OnDeliveryRetailFiberhome)
+					fileExport.SetCellValue(activeSheetNameExport, "W"+strconv.Itoa(i), witelSlice[j].RetailStockHuawei- witelSlice[j].RetailHW + witelSlice[j].OnDeliveryRetailHuawei)
+					fileExport.SetCellValue(activeSheetNameExport, "X"+strconv.Itoa(i), witelSlice[j].RetailStockZTE - witelSlice[j].RetailZTE + witelSlice[j].OnDeliveryRetailZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "Y"+strconv.Itoa(i), witelSlice[j].RetailStockNokia - witelSlice[j].RetailALU + witelSlice[j].OnDeliveryRetailNokia)
+					fileExport.SetCellValue(activeSheetNameExport, "Z"+strconv.Itoa(i), witelSlice[j].TotalRetailStock - witelSlice[j].TotalRetail + witelSlice[j].OnDeliveryTotalRetail)
+
+					fileExport.SetCellValue(activeSheetNameExport, "AA"+strconv.Itoa(i), witelSlice[j].PremiumStockFiberhome - witelSlice[j].PremiumFH + witelSlice[j].OnDeliveryPremiumFiberhome)
+					fileExport.SetCellValue(activeSheetNameExport, "AB"+strconv.Itoa(i), witelSlice[j].PremiumStockHuawei - witelSlice[j].PremiumHW + witelSlice[j].OnDeliveryPremiumHuawei)
+					fileExport.SetCellValue(activeSheetNameExport, "AC"+strconv.Itoa(i), witelSlice[j].PremiumStockZTE - witelSlice[j].PremiumZTE + witelSlice[j].OnDeliveryPremiumZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "AD"+strconv.Itoa(i), witelSlice[j].TotalPremiumStock - witelSlice[j].TotalPremium + witelSlice[j].OnDeliveryTotalPremium)
+
+					fileExport.SetCellValue(activeSheetNameExport, "AE"+strconv.Itoa(i), witelSlice[j].BatasAtasRetailFH)
+					fileExport.SetCellValue(activeSheetNameExport, "AF"+strconv.Itoa(i), witelSlice[j].BatasAtasRetailHW)
+					fileExport.SetCellValue(activeSheetNameExport, "AG"+strconv.Itoa(i), witelSlice[j].BatasAtasRetailZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "AH"+strconv.Itoa(i), witelSlice[j].BatasAtasRetailALU)
+					fileExport.SetCellValue(activeSheetNameExport, "AI"+strconv.Itoa(i), witelSlice[j].BatasAtasRetailFH + witelSlice[j].BatasAtasRetailHW + witelSlice[j].BatasAtasRetailZTE + witelSlice[j].BatasAtasRetailALU)
+
+					fileExport.SetCellValue(activeSheetNameExport, "AJ"+strconv.Itoa(i), witelSlice[j].BatasAtasPremiumFH)
+					fileExport.SetCellValue(activeSheetNameExport, "AK"+strconv.Itoa(i), witelSlice[j].BatasAtasPremiumHW)
+					fileExport.SetCellValue(activeSheetNameExport, "AL"+strconv.Itoa(i), witelSlice[j].BatasAtasPremiumZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "AM"+strconv.Itoa(i), witelSlice[j].BatasAtasPremiumFH + witelSlice[j].BatasAtasPremiumHW + witelSlice[j].BatasAtasPremiumZTE)
+
+					fileExport.SetCellValue(activeSheetNameExport, "AN"+strconv.Itoa(i), witelSlice[j].BatasBawahRetailFH)
+					fileExport.SetCellValue(activeSheetNameExport, "AO"+strconv.Itoa(i), witelSlice[j].BatasBawahRetailHW)
+					fileExport.SetCellValue(activeSheetNameExport, "AP"+strconv.Itoa(i), witelSlice[j].BatasBawahRetailZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "AQ"+strconv.Itoa(i), witelSlice[j].BatasBawahRetailALU)
+					fileExport.SetCellValue(activeSheetNameExport, "AR"+strconv.Itoa(i), witelSlice[j].BatasBawahRetailFH + witelSlice[j].BatasBawahRetailHW + witelSlice[j].BatasBawahRetailZTE + witelSlice[j].BatasBawahRetailALU)
+
+					fileExport.SetCellValue(activeSheetNameExport, "AS"+strconv.Itoa(i), witelSlice[j].BatasBawahPremiumFH)
+					fileExport.SetCellValue(activeSheetNameExport, "AT"+strconv.Itoa(i), witelSlice[j].BatasBawahPremiumHW)
+					fileExport.SetCellValue(activeSheetNameExport, "AU"+strconv.Itoa(i), witelSlice[j].BatasBawahPremiumZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "AV"+strconv.Itoa(i), witelSlice[j].BatasBawahPremiumFH + witelSlice[j].BatasBawahPremiumHW + witelSlice[j].BatasBawahPremiumZTE)
+
+					fileExport.SetCellValue(activeSheetNameExport, "AW"+strconv.Itoa(i), witelSlice[j].QtyKirimRetailFH)
+					fileExport.SetCellValue(activeSheetNameExport, "AX"+strconv.Itoa(i), witelSlice[j].QtyKirimRetailHW)
+					fileExport.SetCellValue(activeSheetNameExport, "AY"+strconv.Itoa(i), witelSlice[j].QtyKirimRetailZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "AZ"+strconv.Itoa(i), witelSlice[j].QtyKirimRetailALU)
+					fileExport.SetCellValue(activeSheetNameExport, "BA"+strconv.Itoa(i), witelSlice[j].QtyKirimRetailFH + witelSlice[j].QtyKirimRetailHW + witelSlice[j].QtyKirimRetailZTE + witelSlice[j].QtyKirimRetailALU)
+
+					fileExport.SetCellValue(activeSheetNameExport, "BB"+strconv.Itoa(i), witelSlice[j].QtyKirimPremiumFH)
+					fileExport.SetCellValue(activeSheetNameExport, "BC"+strconv.Itoa(i), witelSlice[j].QtyKirimPremiumHW)
+					fileExport.SetCellValue(activeSheetNameExport, "BD"+strconv.Itoa(i), witelSlice[j].QtyKirimPremiumZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "BE"+strconv.Itoa(i), witelSlice[j].QtyKirimPremiumFH + witelSlice[j].QtyKirimPremiumHW + witelSlice[j].QtyKirimPremiumZTE)
+
+					fileExport.SetCellValue(activeSheetNameExport, "BF"+strconv.Itoa(i), witelSlice[j].OnDeliveryRetailFiberhome)
+					fileExport.SetCellValue(activeSheetNameExport, "BG"+strconv.Itoa(i), witelSlice[j].OnDeliveryRetailHuawei)
+					fileExport.SetCellValue(activeSheetNameExport, "BH"+strconv.Itoa(i), witelSlice[j].OnDeliveryRetailZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "BI"+strconv.Itoa(i), witelSlice[j].OnDeliveryRetailNokia)
+					fileExport.SetCellValue(activeSheetNameExport, "BJ"+strconv.Itoa(i), witelSlice[j].OnDeliveryTotalRetail)
+
+					fileExport.SetCellValue(activeSheetNameExport, "BK"+strconv.Itoa(i), witelSlice[j].OnDeliveryPremiumFiberhome)
+					fileExport.SetCellValue(activeSheetNameExport, "BL"+strconv.Itoa(i), witelSlice[j].OnDeliveryPremiumHuawei)
+					fileExport.SetCellValue(activeSheetNameExport, "BM"+strconv.Itoa(i), witelSlice[j].OnDeliveryPremiumZTE)
+					fileExport.SetCellValue(activeSheetNameExport, "BN"+strconv.Itoa(i), witelSlice[j].OnDeliveryTotalPremium)
+
+					if(float64(witelSlice[j].TotalRetailStock - witelSlice[j].TotalRetail + witelSlice[j].OnDeliveryTotalRetail) < -(float64(witelSlice[j].TotalRetail) * 0.75)){
+						if err := fileExport.SetCellStyle(activeSheetNameExport, "Z"+strconv.Itoa(i), "Z"+strconv.Itoa(i), styleRed); err != nil {
+					        helper.PanicIfError(err)
+					    }
+					}
+
+					if(float64(witelSlice[j].TotalPremiumStock - witelSlice[j].TotalPremium + witelSlice[j].OnDeliveryTotalPremium) < -(float64(witelSlice[j].TotalPremium) * 0.75)){
+						if err := fileExport.SetCellStyle(activeSheetNameExport, "AD"+strconv.Itoa(i), "AD"+strconv.Itoa(i), styleRed); err != nil {
+					        helper.PanicIfError(err)
+					    }
+					}
+					i += 1;
+				}
+			}
+			filename = "Hasil_Rekap_Stock_SCMT_Merah_"+formattedDate+".xlsx"
+		}
+	}
+
+	// Set active sheet of the workbook
+    fileExport.SetActiveSheet(activeSheetIndexExport)
+
+    bytesBuffer, err := fileExport.WriteToBuffer()
+
+	//Export to download
+	return bytesBuffer.Bytes(), filename, err
 }
